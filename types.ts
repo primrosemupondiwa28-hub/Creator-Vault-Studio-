@@ -1,0 +1,36 @@
+
+export type AspectRatio = '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
+export type SkinFinish = 'default' | 'glowing' | 'matte' | 'dewy_satin';
+export type NailStyle = 'default' | 'french' | 'nude' | 'red' | 'black' | 'chrome';
+export type HairStyle = 'default' | 'straight_sleek' | 'voluminous_blowout' | 'wavy_beachy' | 'curly_coily' | 'braids' | 'afro_natural' | 'updo_bun' | 'short_pixie' | 'bob_cut' | 'long_layers' | 'buzz_cut' | 'side_part' | 'curtain_bangs';
+
+export interface GeneratedImage {
+  id: string;
+  originalData: string; // Base64
+  generatedData: string; // Base64
+  prompt: string;
+  timestamp: number;
+  aspectRatio?: AspectRatio;
+}
+
+export interface AppState {
+  currentImage: string | null; // Primary Subject Image
+  secondaryImage: string | null; // Product or Outfit Image
+  mimeType: string;
+  isGenerating: boolean;
+  error: string | null;
+  history: GeneratedImage[];
+}
+
+export enum ViewMode {
+  HOME = 'HOME',
+  TWINLY_UPLOAD = 'TWINLY_UPLOAD',
+  TWINLY_EDITOR = 'TWINLY_EDITOR',
+  CREATOR_STUDIO = 'CREATOR_STUDIO',
+  UGC_STUDIO = 'UGC_STUDIO',
+  VIRTUAL_TRYON = 'VIRTUAL_TRYON',
+  MERCH_STUDIO = 'MERCH_STUDIO',
+  CAPTION_GENERATOR = 'CAPTION_GENERATOR',
+  EXPLORE_PROMPTS = 'EXPLORE_PROMPTS',
+  GALLERY = 'GALLERY'
+}

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to Creator Vault Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['Playfair Display', 'serif'],
+            },
+            colors: {
+              brand: {
+                50: '#faf7f2', // Cream White
+                100: '#f5efe6',
+                200: '#e8c4c4', // Soft Accent: Blush Pink
+                300: '#dbc4a0', // Secondary Text: Soft Gold
+                400: '#d2b48c',
+                500: '#c9a77c', // Primary Accent: Champagne Gold
+                600: '#b08d62', // Darker Gold for hover
+                700: '#8c6d46',
+                800: '#634b30',
+                900: '#3d2e1e', // Dark Brown border
+                950: '#261b12',
+              },
+              luxury: {
+                900: '#1a1815', // Background: Warm Charcoal
+                800: '#211f1c', // Card Surface 1
+                700: '#2d2a26', // Card Surface 2
+                gold: '#c9a77c',
+              },
+              // Override Slate to match the luxury dark theme for existing components
+              slate: {
+                 50: '#faf7f2',
+                 100: '#f5efe6',
+                 200: '#dbc4a0', // Text matches Soft Gold
+                 300: '#cbb094',
+                 400: '#9e8c7a',
+                 500: '#756658',
+                 600: '#5c5045',
+                 700: '#3d3935', // Borders
+                 800: '#2d2a26', // Lighter Card
+                 900: '#211f1c', // Card
+                 950: '#1a1815', // Background
+              },
+              // Override Emerald for Success states
+              emerald: {
+                400: '#7eb77f', // Success Green
+                500: '#6da06e',
+                600: '#5c8a5d',
+                900: '#1c261d',
+                950: '#0f1410',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #1a1815; /* Luxury 900 */
+        color: #faf7f2; /* Brand 50 */
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #211f1c; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #3d2e1e; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #c9a77c; 
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
