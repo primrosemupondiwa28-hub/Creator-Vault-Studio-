@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors } from 'lucide-react';
+import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users } from 'lucide-react';
 import { generateEditedImage, CosmeticEnhancements } from '../services/geminiService';
-import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle } from '../types';
+import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor } from '../types';
 
 interface TwinlyEditorProps {
   originalImage: string;
@@ -26,13 +26,15 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ originalImage, mimeT
     makeupMode: false,
     skinFinish: 'default',
     nailStyle: 'default',
-    hairStyle: 'default'
+    hairStyle: 'default',
+    hairTarget: 'everyone',
+    hairColor: 'default'
   });
   
   const [customBackground, setCustomBackground] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canGenerate = prompt.trim().length > 0 || enhancements.hairStyle !== 'default';
+  const canGenerate = prompt.trim().length > 0 || enhancements.hairStyle !== 'default' || enhancements.hairColor !== 'default';
 
   const handleGenerate = async () => {
     if (!canGenerate && enhancements.hairStyle === 'default') return;
@@ -101,6 +103,27 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ originalImage, mimeT
     { value: 'curtain_bangs', label: 'Curtain Bangs' },
     { value: 'side_part', label: 'Deep Side Part' },
     { value: 'buzz_cut', label: 'Buzz Cut' },
+  ];
+
+  const colorOptions: {value: HairColor, label: string}[] = [
+    { value: 'default', label: 'Keep Current Color' },
+    { value: 'blonde', label: 'Blonde' },
+    { value: 'brunette', label: 'Brunette' },
+    { value: 'black', label: 'Jet Black' },
+    { value: 'red', label: 'Red' },
+    { value: 'auburn', label: 'Auburn' },
+    { value: 'silver', label: 'Silver / Grey' },
+    { value: 'platinum', label: 'Platinum' },
+    { value: 'pastel_pink', label: 'Pastel Pink' },
+  ];
+
+  const targetOptions: {value: HairTarget, label: string}[] = [
+    { value: 'everyone', label: 'Everyone' },
+    { value: 'women', label: 'Women' },
+    { value: 'men', label: 'Men' },
+    { value: 'children', label: 'Children' },
+    { value: 'person_on_left', label: 'Person on Left' },
+    { value: 'person_on_right', label: 'Person on Right' },
   ];
 
   return (
@@ -240,18 +263,61 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ originalImage, mimeT
              <h3 className="font-serif font-semibold text-brand-200 flex items-center gap-2">
                 <Scissors className="w-4 h-4" /> Hair Studio
              </h3>
-             <div className="relative">
-               <select
-                 value={enhancements.hairStyle}
-                 onChange={(e) => setEnhancements(prev => ({...prev, hairStyle: e.target.value as HairStyle}))}
-                 className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
-               >
-                 {hairOptions.map(opt => (
-                   <option key={opt.value} value={opt.value}>{opt.label}</option>
-                 ))}
-               </select>
-               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
-                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+             <div className="space-y-3">
+               <div>
+                 <label className="text-xs text-brand-400 font-medium mb-1.5 block">Hair Style</label>
+                 <div className="relative">
+                   <select
+                     value={enhancements.hairStyle}
+                     onChange={(e) => setEnhancements(prev => ({...prev, hairStyle: e.target.value as HairStyle}))}
+                     className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
+                   >
+                     {hairOptions.map(opt => (
+                       <option key={opt.value} value={opt.value}>{opt.label}</option>
+                     ))}
+                   </select>
+                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                   </div>
+                 </div>
+               </div>
+
+               <div>
+                 <label className="text-xs text-brand-400 font-medium mb-1.5 block">Hair Color</label>
+                 <div className="relative">
+                   <select
+                     value={enhancements.hairColor}
+                     onChange={(e) => setEnhancements(prev => ({...prev, hairColor: e.target.value as HairColor}))}
+                     className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
+                   >
+                     {colorOptions.map(opt => (
+                       <option key={opt.value} value={opt.value}>{opt.label}</option>
+                     ))}
+                   </select>
+                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                   </div>
+                 </div>
+               </div>
+
+               <div>
+                 <label className="text-xs text-brand-400 font-medium mb-1.5 flex items-center gap-1">
+                    <Users className="w-3 h-3" /> Apply To
+                 </label>
+                 <div className="relative">
+                   <select
+                     value={enhancements.hairTarget}
+                     onChange={(e) => setEnhancements(prev => ({...prev, hairTarget: e.target.value as HairTarget}))}
+                     className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
+                   >
+                     {targetOptions.map(opt => (
+                       <option key={opt.value} value={opt.value}>{opt.label}</option>
+                     ))}
+                   </select>
+                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                   </div>
+                 </div>
                </div>
              </div>
            </div>

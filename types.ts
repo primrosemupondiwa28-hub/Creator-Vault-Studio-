@@ -3,6 +3,8 @@ export type AspectRatio = '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
 export type SkinFinish = 'default' | 'glowing' | 'matte' | 'dewy_satin';
 export type NailStyle = 'default' | 'french' | 'nude' | 'red' | 'black' | 'chrome';
 export type HairStyle = 'default' | 'straight_sleek' | 'voluminous_blowout' | 'wavy_beachy' | 'curly_coily' | 'braids' | 'afro_natural' | 'updo_bun' | 'short_pixie' | 'bob_cut' | 'long_layers' | 'buzz_cut' | 'side_part' | 'curtain_bangs';
+export type HairTarget = 'everyone' | 'women' | 'men' | 'children' | 'person_on_left' | 'person_on_right';
+export type HairColor = 'default' | 'blonde' | 'brunette' | 'black' | 'red' | 'auburn' | 'silver' | 'platinum' | 'pastel_pink';
 
 export interface GeneratedImage {
   id: string;
