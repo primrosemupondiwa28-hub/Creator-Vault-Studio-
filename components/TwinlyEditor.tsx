@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users } from 'lucide-react';
+import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users, User } from 'lucide-react';
 import { generateEditedImage, CosmeticEnhancements } from '../services/geminiService';
-import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor } from '../types';
+import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair } from '../types';
 
 interface TwinlyEditorProps {
   originalImage: string;
@@ -28,13 +28,14 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ originalImage, mimeT
     nailStyle: 'default',
     hairStyle: 'default',
     hairTarget: 'everyone',
-    hairColor: 'default'
+    hairColor: 'default',
+    facialHair: 'default'
   });
   
   const [customBackground, setCustomBackground] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canGenerate = prompt.trim().length > 0 || enhancements.hairStyle !== 'default' || enhancements.hairColor !== 'default';
+  const canGenerate = prompt.trim().length > 0 || enhancements.hairStyle !== 'default' || enhancements.hairColor !== 'default' || enhancements.facialHair !== 'default';
 
   const handleGenerate = async () => {
     if (!canGenerate && enhancements.hairStyle === 'default') return;
@@ -103,6 +104,17 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ originalImage, mimeT
     { value: 'curtain_bangs', label: 'Curtain Bangs' },
     { value: 'side_part', label: 'Deep Side Part' },
     { value: 'buzz_cut', label: 'Buzz Cut' },
+  ];
+
+  const facialHairOptions: {value: FacialHair, label: string}[] = [
+    { value: 'default', label: 'Keep Current' },
+    { value: 'clean_shaven', label: 'Clean Shaven' },
+    { value: 'light_stubble', label: 'Light Stubble' },
+    { value: 'heavy_stubble', label: 'Heavy Stubble' },
+    { value: 'full_beard', label: 'Full Beard' },
+    { value: 'goatee', label: 'Goatee' },
+    { value: 'mustache', label: 'Mustache' },
+    { value: 'handlebars', label: 'Handlebar Mustache' },
   ];
 
   const colorOptions: {value: HairColor, label: string}[] = [
@@ -291,6 +303,26 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ originalImage, mimeT
                      className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
                    >
                      {colorOptions.map(opt => (
+                       <option key={opt.value} value={opt.value}>{opt.label}</option>
+                     ))}
+                   </select>
+                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                   </div>
+                 </div>
+               </div>
+
+               <div>
+                 <label className="text-xs text-brand-400 font-medium mb-1.5 flex items-center gap-1">
+                    <User className="w-3 h-3" /> Facial Hair (Men)
+                 </label>
+                 <div className="relative">
+                   <select
+                     value={enhancements.facialHair}
+                     onChange={(e) => setEnhancements(prev => ({...prev, facialHair: e.target.value as FacialHair}))}
+                     className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
+                   >
+                     {facialHairOptions.map(opt => (
                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                      ))}
                    </select>

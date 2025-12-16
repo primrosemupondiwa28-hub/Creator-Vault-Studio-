@@ -5,6 +5,7 @@ export type NailStyle = 'default' | 'french' | 'nude' | 'red' | 'black' | 'chrom
 export type HairStyle = 'default' | 'straight_sleek' | 'voluminous_blowout' | 'wavy_beachy' | 'curly_coily' | 'braids' | 'afro_natural' | 'updo_bun' | 'short_pixie' | 'bob_cut' | 'long_layers' | 'buzz_cut' | 'side_part' | 'curtain_bangs';
 export type HairTarget = 'everyone' | 'women' | 'men' | 'children' | 'person_on_left' | 'person_on_right';
 export type HairColor = 'default' | 'blonde' | 'brunette' | 'black' | 'red' | 'auburn' | 'silver' | 'platinum' | 'pastel_pink';
+export type FacialHair = 'default' | 'clean_shaven' | 'light_stubble' | 'heavy_stubble' | 'full_beard' | 'goatee' | 'mustache' | 'handlebars';
 
 export interface GeneratedImage {
   id: string;

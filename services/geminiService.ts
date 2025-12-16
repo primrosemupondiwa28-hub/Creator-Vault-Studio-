@@ -1,5 +1,5 @@
 import { GoogleGenAI, Modality, Type } from "@google/genai";
-import { AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor } from '../types';
+import { AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair } from '../types';
 
 const API_KEY = process.env.API_KEY || '';
 
@@ -19,6 +19,7 @@ export interface CosmeticEnhancements {
   hairStyle: HairStyle;
   hairTarget: HairTarget;
   hairColor: HairColor;
+  facialHair: FacialHair;
 }
 
 export type SocialPlatform = 'instagram' | 'tiktok' | 'facebook' | 'twitter';
@@ -103,6 +104,10 @@ export const generateEditedImage = async (
     ? enhancements.hairColor.replace(/_/g, ' ')
     : null;
 
+  const targetFacialHair = enhancements.facialHair !== 'default'
+    ? enhancements.facialHair.replace(/_/g, ' ')
+    : null;
+
   const targetSubjectRaw = enhancements.hairTarget || 'everyone';
   const targetSubject = targetSubjectRaw.replace(/_/g, ' ');
 
@@ -139,17 +144,19 @@ export const generateEditedImage = async (
       4. **SKIN TONE SAFETY**: Foundation and contour must perfectly match the subject's natural undertones. No "whitewashing" or "bronzing" that shifts ethnicity.
     ` : '- Makeup: Natural, clean, fresh-faced.'}
     
-    ${(targetHair || targetColor) ? `
-    - **HAIR TRANSFORMATION PROTOCOL**:
-      1. **TARGET SUBJECTS**: Apply hair changes ONLY to: ${targetSubject.toUpperCase()}. If the target is 'everyone', apply to all. If 'person on left', only the leftmost subject. If 'women', only female subjects.
+    ${(targetHair || targetColor || targetFacialHair) ? `
+    - **HAIR & GROOMING TRANSFORMATION PROTOCOL**:
+      1. **TARGET SUBJECTS**: Apply hair changes ONLY to: ${targetSubject.toUpperCase()}. 
+         - NOTE: If applying Facial Hair, ONLY apply to male subjects within the target group.
       2. **TARGET STYLE**: ${targetHair ? `Change hairstyle to "${targetHair}".` : 'Keep current hairstyle structure.'}
       3. **TARGET COLOR**: ${targetColor ? `Change hair color to "${targetColor}".` : 'Keep original hair color.'}
-      4. **HAIRLINE ANCHORING**: You must maintain the subject's **original hairline exactly**. Do not lower or raise the forehead line. The new hair must grow from the existing scalp boundary.
-      5. **SKIN TONE PRESERVATION**: Changing hair MUST NOT affect the face's skin tone. 
+      4. **FACIAL HAIR**: ${targetFacialHair ? `Apply "${targetFacialHair}" to male subjects. Ensure realistic density and growth patterns on the jaw/lip area.` : 'Keep original facial hair.'}
+      5. **HAIRLINE ANCHORING**: You must maintain the subject's **original hairline exactly**. Do not lower or raise the forehead line. The new hair must grow from the existing scalp boundary.
+      6. **SKIN TONE PRESERVATION**: Changing hair MUST NOT affect the face's skin tone. 
          - If the subject is Dark-Skinned and the new hair is Blonde, the skin MUST remain Dark.
          - If the subject is Light-Skinned and the new hair is Black, the skin MUST remain Light.
          - **Do not blend** hair color into skin tone.
-      6. **REALISM**: Ensure realistic shadowing where hair meets skin.` 
+      7. **REALISM**: Ensure realistic shadowing where hair meets skin.` 
     : '- Keep natural hair texture, color, and style unless instructed otherwise.'}
 
     OUTPUT: Photorealistic, High-Definition, Identity-Accurate.
