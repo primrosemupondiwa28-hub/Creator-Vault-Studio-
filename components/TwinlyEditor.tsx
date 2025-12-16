@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users, User } from 'lucide-react';
+import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users, User, Check, Feather } from 'lucide-react';
 import { generateEditedImage, CosmeticEnhancements } from '../services/geminiService';
-import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair } from '../types';
+import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair, HairTexture } from '../types';
 
 interface TwinlyEditorProps {
   apiKey: string;
@@ -28,6 +28,7 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
     skinFinish: 'default',
     nailStyle: 'default',
     hairStyle: 'default',
+    hairTexture: 'default',
     hairTarget: 'everyone',
     hairColor: 'default',
     facialHair: 'default'
@@ -36,7 +37,7 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
   const [customBackground, setCustomBackground] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canGenerate = prompt.trim().length > 0 || enhancements.hairStyle !== 'default' || enhancements.hairColor !== 'default' || enhancements.facialHair !== 'default';
+  const canGenerate = prompt.trim().length > 0 || enhancements.hairStyle !== 'default' || enhancements.hairColor !== 'default' || enhancements.facialHair !== 'default' || enhancements.hairTexture !== 'default';
 
   const handleGenerate = async () => {
     if (!canGenerate && enhancements.hairStyle === 'default') return;
@@ -92,20 +93,22 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
   };
 
   const hairOptions: {value: HairStyle, label: string}[] = [
-    { value: 'default', label: 'Keep Current Hair' },
-    { value: 'voluminous_blowout', label: 'Voluminous Blowout' },
-    { value: 'straight_sleek', label: 'Straight & Sleek' },
-    { value: 'wavy_beachy', label: 'Wavy / Beachy' },
-    { value: 'curly_coily', label: 'Curly / Coily' },
-    { value: 'braids', label: 'Braids / Cornrows' },
-    { value: 'afro_natural', label: 'Afro / Natural' },
+    { value: 'default', label: 'Current Hair' },
+    { value: 'voluminous_blowout', label: 'Blowout' },
+    { value: 'straight_sleek', label: 'Sleek Straight' },
+    { value: 'wavy_beachy', label: 'Beachy Waves' },
+    { value: 'curly_coily', label: 'Coily Curls' },
+    { value: 'braids', label: 'Braids' },
+    { value: 'afro_natural', label: 'Natural Afro' },
     { value: 'updo_bun', label: 'Elegant Updo' },
     { value: 'short_pixie', label: 'Short Pixie' },
     { value: 'bob_cut', label: 'Chic Bob' },
     { value: 'long_layers', label: 'Long Layers' },
     { value: 'curtain_bangs', label: 'Curtain Bangs' },
-    { value: 'side_part', label: 'Deep Side Part' },
+    { value: 'side_part', label: 'Side Part' },
     { value: 'buzz_cut', label: 'Buzz Cut' },
+    { value: 'bald', label: 'Bald' },
+    { value: 'mohawk', label: 'Mohawk' },
   ];
 
   const facialHairOptions: {value: FacialHair, label: string}[] = [
@@ -119,16 +122,31 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
     { value: 'handlebars', label: 'Handlebar Mustache' },
   ];
 
-  const colorOptions: {value: HairColor, label: string}[] = [
-    { value: 'default', label: 'Keep Current Color' },
-    { value: 'blonde', label: 'Blonde' },
-    { value: 'brunette', label: 'Brunette' },
-    { value: 'black', label: 'Jet Black' },
-    { value: 'red', label: 'Red' },
-    { value: 'auburn', label: 'Auburn' },
-    { value: 'silver', label: 'Silver / Grey' },
-    { value: 'platinum', label: 'Platinum' },
-    { value: 'pastel_pink', label: 'Pastel Pink' },
+  const colorOptions: {value: HairColor, label: string, hex: string}[] = [
+    { value: 'default', label: 'Current', hex: 'transparent' },
+    { value: 'blonde', label: 'Blonde', hex: '#e6cba8' },
+    { value: 'brunette', label: 'Brunette', hex: '#4a3728' },
+    { value: 'black', label: 'Black', hex: '#1a1a1a' },
+    { value: 'red', label: 'Red', hex: '#8a3324' },
+    { value: 'auburn', label: 'Auburn', hex: '#592f2a' },
+    { value: 'copper', label: 'Copper', hex: '#b87333' },
+    { value: 'silver', label: 'Silver', hex: '#c0c0c0' },
+    { value: 'platinum', label: 'Platinum', hex: '#e5e4e2' },
+    { value: 'white', label: 'White', hex: '#ffffff' },
+    { value: 'pastel_pink', label: 'Pink', hex: '#ffb7c5' },
+    { value: 'pastel_purple', label: 'Lavender', hex: '#e6e6fa' },
+    { value: 'midnight_blue', label: 'Midnight Blue', hex: '#191970' },
+    { value: 'neon_green', label: 'Neon Green', hex: '#39ff14' },
+  ];
+
+  const textureOptions: {value: HairTexture, label: string}[] = [
+    { value: 'default', label: 'Natural / Default' },
+    { value: 'smooth_silky', label: 'Silky Smooth' },
+    { value: 'messy_tousled', label: 'Messy / Tousled' },
+    { value: 'wet_look', label: 'Wet Look' },
+    { value: 'glossy_shiny', label: 'High Gloss' },
+    { value: 'matte_dry', label: 'Soft Matte' },
+    { value: 'coarse_kinky', label: 'Coarse / Textured' },
   ];
 
   const targetOptions: {value: HairTarget, label: string}[] = [
@@ -136,8 +154,8 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
     { value: 'women', label: 'Women' },
     { value: 'men', label: 'Men' },
     { value: 'children', label: 'Children' },
-    { value: 'person_on_left', label: 'Person on Left' },
-    { value: 'person_on_right', label: 'Person on Right' },
+    { value: 'person_on_left', label: 'Left Person' },
+    { value: 'person_on_right', label: 'Right Person' },
   ];
 
   return (
@@ -277,43 +295,83 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
              <h3 className="font-serif font-semibold text-brand-200 flex items-center gap-2">
                 <Scissors className="w-4 h-4" /> Hair Studio
              </h3>
-             <div className="space-y-3">
+             <div className="space-y-4">
+               
+               {/* Hair Style Grid */}
                <div>
-                 <label className="text-xs text-brand-400 font-medium mb-1.5 block">Hair Style</label>
-                 <div className="relative">
-                   <select
-                     value={enhancements.hairStyle}
-                     onChange={(e) => setEnhancements(prev => ({...prev, hairStyle: e.target.value as HairStyle}))}
-                     className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
-                   >
-                     {hairOptions.map(opt => (
-                       <option key={opt.value} value={opt.value}>{opt.label}</option>
-                     ))}
-                   </select>
-                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
-                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                   </div>
+                 <label className="text-xs text-brand-400 font-medium mb-2 block">Hair Style</label>
+                 <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-brand-900">
+                   {hairOptions.map(opt => (
+                     <button
+                       key={opt.value}
+                       onClick={() => setEnhancements({...enhancements, hairStyle: opt.value})}
+                       className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium border transition-all ${enhancements.hairStyle === opt.value ? 'bg-brand-600 border-brand-500 text-white shadow-md' : 'bg-luxury-900 border-brand-900/30 text-brand-200 hover:border-brand-500/50'}`}
+                     >
+                       {opt.label}
+                       {enhancements.hairStyle === opt.value && <Check className="w-3 h-3" />}
+                     </button>
+                   ))}
                  </div>
                </div>
 
+               {/* Hair Texture */}
                <div>
-                 <label className="text-xs text-brand-400 font-medium mb-1.5 block">Hair Color</label>
-                 <div className="relative">
-                   <select
-                     value={enhancements.hairColor}
-                     onChange={(e) => setEnhancements(prev => ({...prev, hairColor: e.target.value as HairColor}))}
-                     className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
-                   >
-                     {colorOptions.map(opt => (
-                       <option key={opt.value} value={opt.value}>{opt.label}</option>
-                     ))}
-                   </select>
-                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
-                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                   </div>
+                  <label className="text-xs text-brand-400 font-medium mb-1.5 flex items-center gap-1">
+                     <Feather className="w-3 h-3" /> Hair Texture
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={enhancements.hairTexture}
+                      onChange={(e) => setEnhancements(prev => ({...prev, hairTexture: e.target.value as HairTexture}))}
+                      className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
+                    >
+                      {textureOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                  </div>
+               </div>
+
+               {/* Target Selector */}
+               <div>
+                 <label className="text-xs text-brand-400 font-medium mb-1.5 flex items-center gap-1">
+                    <Users className="w-3 h-3" /> Apply To
+                 </label>
+                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {targetOptions.map(opt => (
+                       <button
+                         key={opt.value}
+                         onClick={() => setEnhancements({...enhancements, hairTarget: opt.value})}
+                         className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs border transition-colors ${enhancements.hairTarget === opt.value ? 'bg-brand-900/60 border-brand-500 text-brand-100' : 'bg-luxury-900 border-transparent text-brand-400 hover:bg-luxury-900/80'}`}
+                       >
+                         {opt.label}
+                       </button>
+                    ))}
                  </div>
                </div>
 
+               {/* Hair Color */}
+               <div>
+                 <label className="text-xs text-brand-400 font-medium mb-2 block">Hair Color</label>
+                 <div className="flex flex-wrap gap-2">
+                    {colorOptions.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setEnhancements({...enhancements, hairColor: opt.value})}
+                        className={`w-8 h-8 rounded-full border-2 transition-all relative group flex items-center justify-center ${enhancements.hairColor === opt.value ? 'border-brand-500 scale-110' : 'border-transparent opacity-70 hover:opacity-100 hover:scale-105'}`}
+                        style={{ backgroundColor: opt.value === 'default' ? 'transparent' : opt.hex }}
+                        title={opt.label}
+                      >
+                         {opt.value === 'default' && <div className="w-full h-0.5 bg-brand-400 -rotate-45" />}
+                      </button>
+                    ))}
+                 </div>
+               </div>
+
+               {/* Facial Hair */}
                <div>
                  <label className="text-xs text-brand-400 font-medium mb-1.5 flex items-center gap-1">
                     <User className="w-3 h-3" /> Facial Hair (Men)
@@ -334,25 +392,6 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                  </div>
                </div>
 
-               <div>
-                 <label className="text-xs text-brand-400 font-medium mb-1.5 flex items-center gap-1">
-                    <Users className="w-3 h-3" /> Apply To
-                 </label>
-                 <div className="relative">
-                   <select
-                     value={enhancements.hairTarget}
-                     onChange={(e) => setEnhancements(prev => ({...prev, hairTarget: e.target.value as HairTarget}))}
-                     className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
-                   >
-                     {targetOptions.map(opt => (
-                       <option key={opt.value} value={opt.value}>{opt.label}</option>
-                     ))}
-                   </select>
-                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
-                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                   </div>
-                 </div>
-               </div>
              </div>
            </div>
 
