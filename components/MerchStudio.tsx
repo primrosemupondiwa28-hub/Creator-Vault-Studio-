@@ -4,11 +4,12 @@ import { generateMockup } from '../services/geminiService';
 import { GeneratedImage } from '../types';
 
 interface MerchStudioProps {
+  apiKey: string;
   onBack: () => void;
   onSaveToHistory: (img: GeneratedImage) => void;
 }
 
-export const MerchStudio: React.FC<MerchStudioProps> = ({ onBack, onSaveToHistory }) => {
+export const MerchStudio: React.FC<MerchStudioProps> = ({ apiKey, onBack, onSaveToHistory }) => {
   const [designImage, setDesignImage] = useState<string | null>(null);
   const [customBaseImage, setCustomBaseImage] = useState<string | null>(null);
   
@@ -65,6 +66,7 @@ export const MerchStudio: React.FC<MerchStudioProps> = ({ onBack, onSaveToHistor
 
     try {
       const results = await generateMockup(
+        apiKey,
         designImage,
         customBaseImage, // Optional
         customBaseImage ? "Custom Object" : selectedTemplate.name,

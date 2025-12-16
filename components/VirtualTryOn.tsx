@@ -4,11 +4,12 @@ import { generateCompositeImage } from '../services/geminiService';
 import { GeneratedImage } from '../types';
 
 interface VirtualTryOnProps {
+  apiKey: string;
   onBack: () => void;
   onSaveToHistory: (img: GeneratedImage) => void;
 }
 
-export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ onBack, onSaveToHistory }) => {
+export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSaveToHistory }) => {
   const [personImage, setPersonImage] = useState<string | null>(null);
   const [outfitImage, setOutfitImage] = useState<string | null>(null);
   const [stylingNotes, setStylingNotes] = useState('');
@@ -31,7 +32,7 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ onBack, onSaveToHist
     setGeneratedImages([]);
     try {
       const prompt = stylingNotes.trim() || "Standard fit, fashion pose";
-      const results = await generateCompositeImage(personImage, outfitImage, 'TRYON', prompt);
+      const results = await generateCompositeImage(apiKey, personImage, outfitImage, 'TRYON', prompt);
       setGeneratedImages(results);
       setSelectedImageIndex(0);
       if (results[0]) {

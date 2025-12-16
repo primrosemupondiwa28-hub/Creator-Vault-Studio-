@@ -4,13 +4,14 @@ import { generateEditedImage, CosmeticEnhancements } from '../services/geminiSer
 import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair } from '../types';
 
 interface TwinlyEditorProps {
+  apiKey: string;
   originalImage: string;
   mimeType: string;
   onBack: () => void;
   onSaveToHistory: (img: GeneratedImage) => void;
 }
 
-export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ originalImage, mimeType, onBack, onSaveToHistory }) => {
+export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImage, mimeType, onBack, onSaveToHistory }) => {
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   
@@ -45,6 +46,7 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ originalImage, mimeT
 
     try {
       const results = await generateEditedImage(
+        apiKey,
         originalImage, 
         mimeType, 
         prompt || (enhancements.hairStyle !== 'default' ? "Apply hair transformation." : "Enhanced portrait."), 

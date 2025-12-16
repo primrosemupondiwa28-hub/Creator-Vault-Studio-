@@ -3,10 +3,11 @@ import { ArrowLeft, Upload, Check, Copy, Instagram, Facebook, Twitter, Music2, S
 import { generateSocialCaptions, SocialCaptions, SocialPlatform, CaptionOptions } from '../services/geminiService';
 
 interface CaptionGeneratorProps {
+  apiKey: string;
   onBack: () => void;
 }
 
-export const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({ onBack }) => {
+export const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({ apiKey, onBack }) => {
   const [image, setImage] = useState<string | null>(null);
   const [context, setContext] = useState('');
   const [captions, setCaptions] = useState<SocialCaptions | null>(null);
@@ -63,7 +64,7 @@ export const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({ onBack }) =>
         includeHashtags,
         includeEmojis
       };
-      const result = await generateSocialCaptions(image, selectedPlatforms, context, options);
+      const result = await generateSocialCaptions(apiKey, image, selectedPlatforms, context, options);
       setCaptions(result);
     } catch (e) {
       console.error(e);

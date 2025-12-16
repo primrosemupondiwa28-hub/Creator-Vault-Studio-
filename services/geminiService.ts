@@ -1,8 +1,6 @@
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 import { AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair } from '../types';
 
-const API_KEY = process.env.API_KEY || '';
-
 const cleanBase64 = (base64: string): string => {
   if (base64.includes('base64,')) {
     return base64.split('base64,')[1];
@@ -83,6 +81,7 @@ const generateSingleImage = async (
 
 // Twinly Editor Logic
 export const generateEditedImage = async (
+  apiKey: string,
   imageBase64: string, 
   mimeType: string, 
   userPrompt: string,
@@ -91,9 +90,9 @@ export const generateEditedImage = async (
   aspectRatio: AspectRatio = '1:1',
   customBackgroundBase64?: string | null
 ): Promise<string[]> => {
-  if (!API_KEY) throw new Error("API Key is missing.");
+  if (!apiKey) throw new Error("API Key is missing.");
 
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   // Format hairstyle string for prompt
   const targetHair = enhancements.hairStyle !== 'default' 
@@ -183,15 +182,16 @@ export const generateEditedImage = async (
 
 // Creator Studio, UGC Studio & Virtual Try-On Logic
 export const generateCompositeImage = async (
+  apiKey: string,
   subjectBase64: string,
   referenceBase64: string, // Product or Outfit
   mode: 'CREATOR' | 'TRYON' | 'UGC',
   userPrompt: string,
   aspectRatio: AspectRatio = '3:4'
 ): Promise<string[]> => {
-  if (!API_KEY) throw new Error("API Key is missing.");
+  if (!apiKey) throw new Error("API Key is missing.");
 
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   let systemPrompt = "";
 
@@ -268,6 +268,7 @@ export const generateCompositeImage = async (
 };
 
 export const generateMockup = async (
+  apiKey: string,
   designBase64: string,
   targetProduct: string | null, // If null, user relies on text prompt
   productType: string, // "T-Shirt", "Mug", etc.
@@ -275,8 +276,8 @@ export const generateMockup = async (
   userPrompt: string,
   aspectRatio: AspectRatio = '1:1'
 ): Promise<string[]> => {
-  if (!API_KEY) throw new Error("API Key is missing.");
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  if (!apiKey) throw new Error("API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey });
 
   const systemPrompt = `
     ROLE: High-End Product Photographer & Mockup Specialist.
@@ -319,14 +320,15 @@ export const generateMockup = async (
 };
 
 export const generateSocialCaptions = async (
+  apiKey: string,
   imageBase64: string,
   platforms: SocialPlatform[],
   context: string = "",
   options: CaptionOptions
 ): Promise<SocialCaptions> => {
-  if (!API_KEY) throw new Error("API Key is missing.");
+  if (!apiKey) throw new Error("API Key is missing.");
 
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   // Build the requirements text based on selected platforms and options
   let requirementsText = "";

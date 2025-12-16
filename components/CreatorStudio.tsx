@@ -4,11 +4,12 @@ import { generateCompositeImage } from '../services/geminiService';
 import { GeneratedImage } from '../types';
 
 interface CreatorStudioProps {
+  apiKey: string;
   onBack: () => void;
   onSaveToHistory: (img: GeneratedImage) => void;
 }
 
-export const CreatorStudio: React.FC<CreatorStudioProps> = ({ onBack, onSaveToHistory }) => {
+export const CreatorStudio: React.FC<CreatorStudioProps> = ({ apiKey, onBack, onSaveToHistory }) => {
   const [modelImage, setModelImage] = useState<string | null>(null);
   const [productImage, setProductImage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -30,7 +31,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({ onBack, onSaveToHi
     setIsGenerating(true);
     setGeneratedImages([]);
     try {
-      const results = await generateCompositeImage(modelImage, productImage, 'CREATOR', prompt);
+      const results = await generateCompositeImage(apiKey, modelImage, productImage, 'CREATOR', prompt);
       setGeneratedImages(results);
       setSelectedImageIndex(0);
       if (results[0]) {

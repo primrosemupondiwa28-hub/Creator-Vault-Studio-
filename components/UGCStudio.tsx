@@ -4,11 +4,12 @@ import { generateCompositeImage } from '../services/geminiService';
 import { GeneratedImage } from '../types';
 
 interface UGCStudioProps {
+  apiKey: string;
   onBack: () => void;
   onSaveToHistory: (img: GeneratedImage) => void;
 }
 
-export const UGCStudio: React.FC<UGCStudioProps> = ({ onBack, onSaveToHistory }) => {
+export const UGCStudio: React.FC<UGCStudioProps> = ({ apiKey, onBack, onSaveToHistory }) => {
   const [modelImage, setModelImage] = useState<string | null>(null);
   const [productImage, setProductImage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -48,7 +49,7 @@ export const UGCStudio: React.FC<UGCStudioProps> = ({ onBack, onSaveToHistory })
     const effectivePrompt = prompt || autoPrompts[Math.floor(Math.random() * autoPrompts.length)];
 
     try {
-      const results = await generateCompositeImage(modelImage, productImage, 'UGC', effectivePrompt);
+      const results = await generateCompositeImage(apiKey, modelImage, productImage, 'UGC', effectivePrompt);
       setGeneratedImages(results);
       setSelectedImageIndex(0);
       if (results[0]) {
