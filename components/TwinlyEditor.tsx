@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users, User, Check, Feather } from 'lucide-react';
 import { generateEditedImage, CosmeticEnhancements } from '../services/geminiService';
 import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair, HairTexture } from '../types';
@@ -20,6 +20,45 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'split' | 'single'>('split');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('3:4');
+  
+  // Loading State
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  
+  const loadingMessages = [
+    "Locking facial features...",
+    "Preserving identity geometry...",
+    "Applying style variations...",
+    "Finalizing TrueTone™ render..."
+  ];
+
+  useEffect(() => {
+    let stepInterval: any;
+    let progressInterval: any;
+
+    if (isGenerating) {
+      setLoadingStep(0);
+      setProgress(0);
+      
+      // Cycle messages
+      stepInterval = setInterval(() => {
+        setLoadingStep((prev) => (prev + 1) % loadingMessages.length);
+      }, 3000);
+
+      // Simulate progress (15s approx total time)
+      progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 95) return 95;
+          const increment = Math.random() * 2 + 0.5; // Random increment between 0.5% and 2.5%
+          return prev + increment;
+        });
+      }, 200);
+    }
+    return () => {
+      clearInterval(stepInterval);
+      clearInterval(progressInterval);
+    };
+  }, [isGenerating]);
   
   const [enhancements, setEnhancements] = useState<CosmeticEnhancements>({
     teethWhitening: false,
@@ -57,6 +96,7 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
         customBackground
       );
       
+      setProgress(100);
       setGeneratedImages(results);
       setSelectedImageIndex(0);
       
@@ -244,15 +284,26 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
             )}
 
             {isGenerating && (
-              <div className="absolute inset-0 bg-luxury-900/80 backdrop-blur-md z-20 flex flex-col items-center justify-center">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full border-4 border-brand-900 border-t-brand-500 animate-spin"></div>
-                  <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-brand-400" />
+              <div className="absolute inset-0 bg-luxury-900/90 backdrop-blur-md z-20 flex flex-col items-center justify-center">
+                <div className="relative mb-6">
+                  <div className="w-20 h-20 rounded-full border-4 border-brand-900 border-t-brand-500 animate-spin"></div>
+                  <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-brand-400" />
                 </div>
-                <h3 className="mt-6 text-2xl font-serif text-brand-100">Designing...</h3>
-                <div className="flex items-center gap-2 mt-3 text-emerald-400/80 text-sm font-medium bg-emerald-950/30 px-3 py-1 rounded-full border border-emerald-500/20">
-                  <Lock className="w-3 h-3" />
-                  <span>Preserving Facial Structures</span>
+                <h3 className="text-2xl font-serif text-brand-100 mb-2">Designing Twin...</h3>
+                <p className="text-brand-400/80 font-medium animate-pulse mb-4 min-w-[200px] text-center">{loadingMessages[loadingStep]}</p>
+                
+                {/* Progress Bar */}
+                <div className="w-64 h-2 bg-luxury-950 rounded-full overflow-hidden border border-brand-900/50 mb-6">
+                  <div 
+                    className="h-full bg-brand-500 transition-all duration-200 ease-out"
+                    style={{ width: `${Math.min(100, Math.round(progress))}%` }}
+                  />
+                </div>
+                <p className="text-brand-400/60 text-xs font-mono mb-6">{Math.min(100, Math.round(progress))}% Complete</p>
+                
+                <div className="flex items-center gap-2 text-emerald-400/80 text-xs font-bold bg-emerald-950/40 px-4 py-2 rounded-full border border-emerald-500/20">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>IDENTITY PRESERVATION ACTIVE</span>
                 </div>
               </div>
             )}

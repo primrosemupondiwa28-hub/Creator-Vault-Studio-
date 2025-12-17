@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Box, CheckCircle2, Image as ImageIcon, Layers, Package, RefreshCw, Shirt, Smartphone, Sparkles, Upload, Book, BookOpen, Tablet } from 'lucide-react';
 import { generateMockup } from '../services/geminiService';
 import { GeneratedImage } from '../types';
@@ -19,6 +19,45 @@ export const MerchStudio: React.FC<MerchStudioProps> = ({ apiKey, onBack, onSave
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Loading State
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  const loadingMessages = [
+    "Warping design to geometry...",
+    "Calculating surface reflections...",
+    "Applying material textures...",
+    "Rendering studio lighting..."
+  ];
+
+  useEffect(() => {
+    let stepInterval: any;
+    let progressInterval: any;
+
+    if (isGenerating) {
+      setLoadingStep(0);
+      setProgress(0);
+      
+      // Cycle messages
+      stepInterval = setInterval(() => {
+        setLoadingStep((prev) => (prev + 1) % loadingMessages.length);
+      }, 2500);
+
+      // Simulate progress
+      progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 95) return 95;
+          const increment = Math.random() * 2 + 0.5;
+          return prev + increment;
+        });
+      }, 200);
+    }
+    return () => {
+      clearInterval(stepInterval);
+      clearInterval(progressInterval);
+    };
+  }, [isGenerating]);
 
   // Presets
   const templates = {
@@ -75,6 +114,7 @@ export const MerchStudio: React.FC<MerchStudioProps> = ({ apiKey, onBack, onSave
         '1:1'
       );
       
+      setProgress(100);
       setGeneratedImages(results);
       setSelectedImageIndex(0);
       
@@ -216,10 +256,22 @@ export const MerchStudio: React.FC<MerchStudioProps> = ({ apiKey, onBack, onSave
           <div className="lg:col-span-8 flex flex-col gap-4">
              <div className="bg-luxury-800 rounded-3xl p-6 flex-1 flex flex-col items-center justify-center border border-brand-900/30 relative overflow-hidden min-h-[500px] shadow-2xl">
                 {isGenerating && (
-                   <div className="absolute inset-0 bg-luxury-900/80 backdrop-blur z-10 flex flex-col items-center justify-center">
-                      <RefreshCw className="w-12 h-12 text-brand-500 animate-spin mb-4" />
-                      <p className="font-serif text-2xl text-brand-100">Applying Design...</p>
-                      <p className="text-brand-400/60 mt-2 text-sm">Warping texture to {customBaseImage ? 'Custom Object' : selectedTemplate.name} geometry</p>
+                   <div className="absolute inset-0 bg-luxury-900/90 backdrop-blur z-10 flex flex-col items-center justify-center">
+                      <div className="relative mb-6">
+                         <div className="w-16 h-16 rounded-full border-4 border-brand-900 border-t-brand-500 animate-spin"></div>
+                         <RefreshCw className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-brand-400" />
+                      </div>
+                      <p className="font-serif text-2xl text-brand-100 mb-2">Applying Design...</p>
+                      <p className="text-brand-400/70 text-sm animate-pulse mb-4">{loadingMessages[loadingStep]}</p>
+                      
+                      {/* Progress Bar */}
+                      <div className="w-56 h-1.5 bg-luxury-950 rounded-full overflow-hidden border border-brand-900/50 mb-2">
+                        <div 
+                          className="h-full bg-brand-500 transition-all duration-200 ease-out"
+                          style={{ width: `${Math.min(100, Math.round(progress))}%` }}
+                        />
+                      </div>
+                      <p className="text-brand-400/50 text-xs font-mono">{Math.min(100, Math.round(progress))}%</p>
                    </div>
                 )}
                 
@@ -260,4 +312,4 @@ export const MerchStudio: React.FC<MerchStudioProps> = ({ apiKey, onBack, onSave
        </div>
     </div>
   );
-};
+}

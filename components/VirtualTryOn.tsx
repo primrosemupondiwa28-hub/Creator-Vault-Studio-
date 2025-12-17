@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Shirt, Sparkles, RefreshCw, Ruler, User, Users, CheckCircle2 } from 'lucide-react';
 import { generateCompositeImage } from '../services/geminiService';
 import { GeneratedImage } from '../types';
@@ -17,6 +17,45 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSa
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Loading State
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  const loadingMessages = [
+    "Mapping body measurements...",
+    "Draping fabric physics...",
+    "Adjusting lighting match...",
+    "Finalizing fit and texture..."
+  ];
+
+  useEffect(() => {
+    let stepInterval: any;
+    let progressInterval: any;
+
+    if (isGenerating) {
+      setLoadingStep(0);
+      setProgress(0);
+      
+      // Cycle messages
+      stepInterval = setInterval(() => {
+        setLoadingStep((prev) => (prev + 1) % loadingMessages.length);
+      }, 3000);
+
+      // Simulate progress
+      progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 95) return 95;
+          const increment = Math.random() * 2 + 0.5;
+          return prev + increment;
+        });
+      }, 200);
+    }
+    return () => {
+      clearInterval(stepInterval);
+      clearInterval(progressInterval);
+    };
+  }, [isGenerating]);
+
   const handleUpload = (setter: (s: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -31,10 +70,13 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSa
     setIsGenerating(true);
     setGeneratedImages([]);
     try {
-      const prompt = stylingNotes.trim() || "Standard fit, fashion pose";
+      const prompt = stylingNotes.trim() || "Swap current clothes with the new outfit. Keep the pose and face exactly the same.";
       const results = await generateCompositeImage(apiKey, personImage, outfitImage, 'TRYON', prompt);
+      
+      setProgress(100);
       setGeneratedImages(results);
       setSelectedImageIndex(0);
+      
       if (results[0]) {
         onSaveToHistory({
           id: Date.now().toString(),
@@ -136,8 +178,22 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSa
                 )}
                 
                 {isGenerating && (
-                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
-                      <Sparkles className="w-12 h-12 text-brand-400 animate-spin" />
+                   <div className="absolute inset-0 bg-luxury-900/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+                      <div className="relative mb-6">
+                        <div className="w-16 h-16 rounded-full border-4 border-pink-900 border-t-pink-500 animate-spin"></div>
+                        <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-pink-400" />
+                      </div>
+                      <p className="font-serif text-xl text-brand-100 mb-2">Styling Outfit...</p>
+                      <p className="text-pink-400/70 text-sm animate-pulse mb-4">{loadingMessages[loadingStep]}</p>
+
+                      {/* Progress Bar */}
+                      <div className="w-56 h-1.5 bg-luxury-950 rounded-full overflow-hidden border border-brand-900/50 mb-2">
+                        <div 
+                          className="h-full bg-pink-500 transition-all duration-200 ease-out"
+                          style={{ width: `${Math.min(100, Math.round(progress))}%` }}
+                        />
+                      </div>
+                      <p className="text-pink-400/50 text-xs font-mono">{Math.min(100, Math.round(progress))}%</p>
                    </div>
                 )}
              </div>

@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality, Type } from "@google/genai";
+import { GoogleGenAI, Modality, Type, Chat } from "@google/genai";
 import { AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair, HairTexture } from '../types';
 
 const cleanBase64 = (base64: string): string => {
@@ -34,6 +34,31 @@ export interface CaptionOptions {
   tone: string;
   includeHashtags: boolean;
   includeEmojis: boolean;
+}
+
+export interface UGCPlanRequest {
+  niche: string;
+  audience: string;
+  length: string;
+  tone: string;
+  goal: string;
+  platform: string;
+  imageBase64?: string | null;
+}
+
+export interface UGCScene {
+  timeRange: string;
+  visual: string;
+  audio: string;
+}
+
+export interface UGCVideoPlan {
+  title: string;
+  viralHook: string;
+  scenes: UGCScene[];
+  caption: string;
+  hashtags: string[];
+  postingTips: string;
 }
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelay = 1000): Promise<T> {
@@ -117,55 +142,41 @@ export const generateEditedImage = async (
 
   const protectionPrompt = `
     ROLE: Forensic Identity Specialist & High-End Portrait Photographer.
-    TASK: Re-contextualize the subjects into a new scene while maintaining 100% forensic fidelity to their original appearances.
+    TASK: Edit the image based on instructions while strictly maintaining the identity of the subjects.
 
     USER_INSTRUCTION: "${userPrompt}"
 
-    *** CRITICAL PROTOCOL: MULTI-SUBJECT IDENTITY ISOLATION ***
-    - **INDIVIDUAL PROCESSING**: Detect EACH person in the image as a separate entity. 
-    - **RACE & ETHNICITY LOCK**: You must strictly preserve the unique race, ethnicity, and skin tone of EACH individual independently. 
-    - **ANTI-HOMOGENIZATION (MIXED GROUPS)**: If the image contains people of different races or skin tones (e.g., a dark-skinned parent and a light-skinned child, or a mixed-race couple), **DO NOT** match their skin tones. 
-        - Subject A must retain Subject A's exact skin tone (e.g., Deep Ebony).
-        - Subject B must retain Subject B's exact skin tone (e.g., Light Olive).
-        - **DO NOT BLEND THEM.** It is critical to show the contrast in skin tones exactly as they appear in the source.
-    - **ABSOLUTE PROHIBITION**: Do not darken light skin or lighten dark skin to match other subjects in the photo.
+    *** CRITICAL: ZERO FACIAL VARIATION POLICY ***
+    1. **IDENTITY LOCK**: The facial structure (eyes, nose, mouth, jaw, head shape) must be a 100% match to the source image.
+    2. **NO RESHAPING**: Do not slim the face, do not change eye size, do not alter age.
+    3. **CONSISTENCY**: Across all generated variations, the person's face must look identical. Variations should ONLY apply to the background, lighting, or requested hair/clothing changes.
+    4. **SOURCE TRUTH**: The input image is the absolute reference. Do not "imagine" a better face. Use the one provided.
 
-    *** PROTOCOL 2: FACIAL STRUCTURE HARD-LOCK ***
-    - Maintain exact facial structure, eye shape, nose shape, and bone structure for EVERY person.
-    - Do not "beautify" features in a way that alters ethnicity or identity.
-    - TrueTone™: Preserve exact melanin values and undertones for each individual.
+    *** PROTOCOL: MULTI-SUBJECT & SKIN TONE ***
+    - **INDIVIDUAL PROCESSING**: Treat each person as a separate protected entity.
+    - **SKIN TONE FIDELITY**: Strictly preserve the specific melanin and undertones of EACH person. 
+    - **MIXED COUPLES/FAMILIES**: Do not homogenize skin tones. If one person is dark and one is light, maintain that exact contrast.
 
-    *** PROTOCOL 3: STYLING & ATMOSPHERE ***
+    *** STYLING INSTRUCTIONS ***
     - Skin Finish: ${enhancements.skinFinish}
     - ${enhancements.teethWhitening ? 'Teeth: Natural White.' : ''}
     - ${enhancements.eyeBrightening ? 'Eyes: Bright & Clear.' : ''}
     
     ${enhancements.makeupMode ? `
-    - **MAKEUP PROTOCOL (HIGH-END GLAMOUR)**:
-      1. **STYLE**: Apply "Soft Luxury Glam". Think red-carpet natural. Defined lashes, eyeliner, subtle contour, and satin/gloss lips.
-      2. **SUBTLETY**: Makeup must enhance, not mask. It should look like the subject's best version of themselves, not a face-paint overlay.
-      3. **IDENTITY PRESERVATION**: Do NOT alter eye shape (e.g., fox-eye trend) or lip size/shape.
-      4. **SKIN TONE SAFETY**: Foundation and contour must perfectly match the subject's natural undertones. No "whitewashing" or "bronzing" that shifts ethnicity.
-    ` : '- Makeup: Natural, clean, fresh-faced.'}
+    - **MAKEUP**: Soft Luxury Glam enhancing natural features. Foundation must match natural skin tone exactly.
+    ` : '- Makeup: Natural, clean.'}
     
     ${(targetHair || targetColor || targetFacialHair || targetTexture) ? `
-    - **HAIR & GROOMING TRANSFORMATION PROTOCOL**:
-      1. **TARGET SUBJECTS**: Apply hair changes ONLY to: ${targetSubject.toUpperCase()}. 
-         - NOTE: If applying Facial Hair, ONLY apply to male subjects within the target group.
-      2. **TARGET STYLE**: ${targetHair ? `Change hairstyle to "${targetHair}".` : 'Keep current hairstyle structure.'}
-      3. **TARGET COLOR**: ${targetColor ? `Change hair color to "${targetColor}".` : 'Keep original hair color.'}
-      4. **TARGET TEXTURE**: ${targetTexture ? `Apply a "${targetTexture}" finish to the hair (e.g. if wet look, make it look damp; if glossy, add high specular highlights).` : 'Keep original hair texture.'}
-      5. **FACIAL HAIR**: ${targetFacialHair ? `Apply "${targetFacialHair}" to male subjects. Ensure realistic density and growth patterns on the jaw/lip area.` : 'Keep original facial hair.'}
-      6. **HAIRLINE ANCHORING**: You must maintain the subject's **original hairline exactly**. Do not lower or raise the forehead line. The new hair must grow from the existing scalp boundary.
-      7. **SKIN TONE PRESERVATION**: Changing hair MUST NOT affect the face's skin tone. 
-         - If the subject is Dark-Skinned and the new hair is Blonde, the skin MUST remain Dark.
-         - If the subject is Light-Skinned and the new hair is Black, the skin MUST remain Light.
-         - **Do not blend** hair color into skin tone.
-      8. **FACE PROTECTION**: Changing hair MUST NOT alter facial features or head shape. Do not swap faces or hair between subjects.
-      9. **REALISM**: Ensure realistic shadowing where hair meets skin.` 
-    : '- Keep natural hair texture, color, and style unless instructed otherwise.'}
+    - **HAIR TRANSFORMATION INSTRUCTIONS**:
+      - **Target Group**: ${targetSubject.toUpperCase()} ONLY.
+      - **New Style**: ${targetHair || 'Maintain structure'}.
+      - **New Color**: ${targetColor || 'Maintain color'}.
+      - **New Texture**: ${targetTexture || 'Maintain texture'}.
+      - **Facial Hair**: ${targetFacialHair || 'Maintain existing'} (Men only).
+      - **CONSTRAINT**: Ensure the new hair respects the subject's original hairline and head volume. Do not distort the skull to fit the hair.
+    ` : '- Keep natural hair texture, color, and style.'}
 
-    OUTPUT: Photorealistic, High-Definition, Identity-Accurate.
+    OUTPUT REQUIREMENT: Photorealistic, High-Definition, Identity-Accurate.
   `;
 
   const parts: any[] = [
@@ -233,28 +244,42 @@ export const generateCompositeImage = async (
       - CRITICAL: Face must match Input 1. Product must match Input 2.
     `;
   } else {
-    // TRYON
+    // TRYON - AGGRESSIVE REPLACEMENT & MULTI-SUBJECT HANDLING
+    
+    // Auto-Scene Logic if prompt is empty
+    const backgroundInstruction = userPrompt.trim() 
+      ? `USER SCENE REQUEST: "${userPrompt}"` 
+      : `AUTO-SCENE: Generate a high-quality background that perfectly matches the aesthetic of the Clothing in Input 2 (e.g., if formal -> luxury hall, if casual -> city/park). Do NOT use the background from Input 1 or Input 2.`;
+
     systemPrompt = `
-      ROLE: Elite Virtual Tailor & Forensic Identity Specialist.
-      TASK: Superimpose the Outfit (Input 2) onto the Model (Input 1) with ZERO alteration to the Model's face, skin tone, or body type.
+      ROLE: Advanced Virtual Tailor & Fashion Compositor.
+      TASK: Perform a COMPLETE CLOTHING SWAP on ALL subjects in the photo.
+
+      --- INPUTS ---
+      INPUT 1 (THE SUBJECTS): The users/people. (Primary Source for Face/Body/Pose).
+      INPUT 2 (THE CLOTHING): The reference garment(s). (Primary Source for Texture/Style).
+
+      --- CRITICAL EXECUTION RULES ---
+      1. **SUBJECT PRIORITY**: The people in the output MUST be the exact people from Input 1.
+      2. **MULTI-PERSON HANDLING**: Detect EVERY person in Input 1. Apply the clothing style from Input 2 to ALL of them. 
+         - If Input 2 is a single item, adapt it to create matching outfits for everyone (e.g., Mom & Kid matching sets, or Couple matching vibes).
+      3. **CLOTHING REPLACEMENT**: Completely replace the original outfits of Input 1.
+         - Do NOT just recolor. Map the texture, pattern, and cut of Input 2 onto the bodies of Input 1.
+      4. **FULL BODY FRAMING**: Ensure the output shows enough of the body to display the outfit clearly.
+         - If Input 1 is a close-up, attempt to generate a 3/4 view to showcase the garment, while keeping the head/face identical.
       
-      INPUT 1: The Model(s). (Reference for Face, Skin, Body Shape).
-      INPUT 2: The Outfit. (Reference for Clothing).
-      
-      USER_NOTES (STYLING): ${userPrompt}
-      
-      *** STRICT IDENTITY & RACE PROTECTION PROTOCOL ***
-      1. MULTI-SUBJECT ISOLATION: If multiple people are in Input 1, treat them as separate individuals. 
-      2. MIXED-RACE PROTECTION: If Input 1 contains people of different races (e.g., Parent/Child), you must preserve the distinct skin tone of EACH person. Do not make them look like the same race if they are not.
-      3. FACE LOCK: The face in the output MUST be a pixel-perfect match to Input 1. Do not "re-imagine" the person.
-      4. SKIN TONE LOCK: Preserve the exact melanin, undertones, and skin texture of EACH person in Input 1. Do not lighten, darken, or smooth the skin.
-      5. BODY SHAPE LOCK: Keep the model's exact body proportions. Only change the fabric covering them.
-      
-      INSTRUCTION:
-      - Dress the subject in Input 1 with the outfit from Input 2.
-      - If Input 1 has multiple people, dress them all according to the style of Input 2.
-      - Maintain the original lighting on the face to ensure it looks authentic.
-      - If the pose needs to adjust slightly for the clothes, keep the head angle and expression identical to Input 1.
+      --- BACKGROUND & SCENE ---
+      ${backgroundInstruction}
+      - The background must be new and immersive.
+      - DO NOT copy the background from Input 1.
+      - DO NOT copy the background from Input 2 (especially if it is a studio mockup).
+
+      --- STRICT PRESERVATION ---
+      - FACIAL IDENTITY: Locked to Input 1.
+      - SKIN TONE: Locked to Input 1.
+      - POSE: Generally follow Input 1's pose, but optimize frame for showcasing the full outfit.
+
+      OUTPUT: High-resolution shot of the subjects from Input 1 wearing the clothes from Input 2.
     `;
   }
 
@@ -420,4 +445,117 @@ export const generateSocialCaptions = async (
     console.error("Caption generation failed", error);
     throw error;
   }
+};
+
+// UGC Bestie Structured Plan Logic
+export const generateUGCVideoPlan = async (
+  apiKey: string,
+  request: UGCPlanRequest
+): Promise<UGCVideoPlan> => {
+  if (!apiKey) throw new Error("API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+    You are UGC Bestie, a viral content strategist. 
+    Create a highly engaging short-form video plan.
+
+    User Brief:
+    - Niche: ${request.niche}
+    - Audience: ${request.audience}
+    - Platform: ${request.platform}
+    - Length: ${request.length}
+    - Tone: ${request.tone}
+    - Goal: ${request.goal || "Growth"}
+    ${request.imageBase64 ? "- Context: I have uploaded an image. Analyze it and incorporate its features (colors, product type, or setting) into the visual instructions." : ""}
+
+    REQUIREMENTS:
+    1. **Viral Hook**: First 3 seconds must be visually or verbally arresting to stop scrolling.
+    2. **Scenes**: Break down video into specific time segments. Separate visual instructions from audio/script.
+    3. **Optimization**: Tailor the language and style specifically for ${request.platform}.
+
+    Return ONLY JSON.
+  `;
+
+  const parts: any[] = [{ text: prompt }];
+
+  if (request.imageBase64) {
+    parts.unshift({ inlineData: { data: cleanBase64(request.imageBase64), mimeType: 'image/png' } });
+  }
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            viralHook: { type: Type.STRING },
+            scenes: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  timeRange: { type: Type.STRING, description: "e.g. 0:00-0:03" },
+                  visual: { type: Type.STRING, description: "Camera angle, action, or text overlay instructions" },
+                  audio: { type: Type.STRING, description: "Spoken script, voiceover line, or sound effect description" }
+                }
+              }
+            },
+            caption: { type: Type.STRING },
+            hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            postingTips: { type: Type.STRING }
+          }
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as UGCVideoPlan;
+    }
+    throw new Error("Failed to generate plan");
+  } catch (error) {
+    console.error("UGC Plan generation failed", error);
+    throw error;
+  }
+};
+
+// Global Support Bot Logic
+export const initSupportChat = (apiKey: string): Chat => {
+  if (!apiKey) throw new Error("API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey });
+
+  const systemInstruction = `
+    You are the **Vault Assistant**, the dedicated AI support agent for **Creator Vault Studio**.
+    Your role is to help users navigate the app, explain features, and troubleshoot issues.
+
+    **APP OVERVIEW:**
+    Creator Vault Studio is a premium AI photo generation suite with strict identity preservation (TrueTone™).
+
+    **KEY FEATURES (KNOW THESE):**
+    1. **Twinly Editor (Flagship)**: For families, couples, and portraits. STRICTLY preserves facial identity using 'Identity Lock'. Features: Hair Studio, Beauty Studio, Background replacement.
+    2. **Creator Studio**: For commercial marketing assets. Blends a Model + Product into a professional scene.
+    3. **UGC Viral Studio**: For social media content. Creates authentic, influencer-style photos (TikTok/Reels vibe). Includes a Video Planner tool.
+    4. **Virtual Wardrobe (Try-On)**: Virtual dressing room. Upload a Person + Outfit to see the fit.
+    5. **Merch Studio**: Product mockups. Place a Design/Logo onto Hoodies, Mugs, Packaging, etc.
+    6. **Caption AI**: Generates social media captions based on images.
+    7. **Style Library**: A collection of high-quality prompts.
+
+    **COMMON TROUBLESHOOTING:**
+    - **Face distortion?** Suggest using high-res photos where the face is clearly visible. Ensure 'Twinly Editor' is used for people-focused edits.
+    - **Generation failed?** Check API key, internet connection, or try a simpler prompt.
+    - **Unrealistic results?** Add keywords like "photorealistic, 8k, highly detailed" to the prompt.
+
+    **TONE:**
+    Professional, helpful, concise, and polite. 
+    Do not hallucinate features that don't exist.
+    If asked about billing/subscriptions, refer them to the Google Gemini API pricing (since this app uses their own key).
+  `;
+
+  return ai.chats.create({
+    model: 'gemini-2.5-flash',
+    config: { systemInstruction },
+  });
 };

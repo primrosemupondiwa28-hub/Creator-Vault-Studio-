@@ -11,6 +11,7 @@ import { ExplorePrompts } from './components/ExplorePrompts';
 import { CaptionGenerator } from './components/CaptionGenerator';
 import { Gallery } from './components/Gallery';
 import { ApiKeyModal } from './components/ApiKeyModal';
+import { SupportBot } from './components/SupportBot';
 import { AppState, ViewMode, GeneratedImage } from './types';
 
 const App: React.FC = () => {
@@ -160,6 +161,9 @@ const App: React.FC = () => {
           <Gallery history={state.history} onSelect={() => {}} />
         )}
       </main>
+
+      {/* Global Support Assistant */}
+      <SupportBot apiKey={apiKey} />
     </div>
   );
 };

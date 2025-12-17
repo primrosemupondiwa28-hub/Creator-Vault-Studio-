@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Upload, ShoppingBag, ArrowLeft, Wand2, RefreshCw, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, ShoppingBag, ArrowLeft, Wand2, RefreshCw, CheckCircle2, Sparkles, Layers } from 'lucide-react';
 import { generateCompositeImage } from '../services/geminiService';
 import { GeneratedImage } from '../types';
 
@@ -17,6 +17,45 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({ apiKey, onBack, on
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Loading State
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  
+  const loadingMessages = [
+    "Analyzing product dimensions...",
+    "Mapping studio light sources...",
+    "Composing commercial shot...",
+    "Rendering high-resolution details..."
+  ];
+
+  useEffect(() => {
+    let stepInterval: any;
+    let progressInterval: any;
+
+    if (isGenerating) {
+      setLoadingStep(0);
+      setProgress(0);
+      
+      // Cycle messages
+      stepInterval = setInterval(() => {
+        setLoadingStep((prev) => (prev + 1) % loadingMessages.length);
+      }, 3000);
+
+      // Simulate progress
+      progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 95) return 95;
+          const increment = Math.random() * 2 + 0.5;
+          return prev + increment;
+        });
+      }, 200);
+    }
+    return () => {
+      clearInterval(stepInterval);
+      clearInterval(progressInterval);
+    };
+  }, [isGenerating]);
+
   const handleUpload = (setter: (s: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -32,8 +71,11 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({ apiKey, onBack, on
     setGeneratedImages([]);
     try {
       const results = await generateCompositeImage(apiKey, modelImage, productImage, 'CREATOR', prompt);
+      
+      setProgress(100);
       setGeneratedImages(results);
       setSelectedImageIndex(0);
+      
       if (results[0]) {
         onSaveToHistory({
           id: Date.now().toString(),
@@ -118,9 +160,22 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({ apiKey, onBack, on
           <div className="flex flex-col h-full gap-4">
              <div className="bg-luxury-800 rounded-3xl p-6 flex-1 flex flex-col items-center justify-center border border-brand-900/30 relative overflow-hidden">
                 {isGenerating && (
-                   <div className="absolute inset-0 bg-luxury-900/80 backdrop-blur z-10 flex flex-col items-center justify-center">
-                      <RefreshCw className="w-10 h-10 text-brand-500 animate-spin mb-4" />
-                      <p className="font-serif text-brand-200">AI Photographer is working...</p>
+                   <div className="absolute inset-0 bg-luxury-900/90 backdrop-blur z-10 flex flex-col items-center justify-center">
+                      <div className="relative mb-6">
+                        <div className="w-16 h-16 rounded-full border-4 border-brand-900 border-t-brand-500 animate-spin"></div>
+                        <Layers className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-brand-400" />
+                      </div>
+                      <p className="font-serif text-xl text-brand-100 mb-2">AI Photographer is working...</p>
+                      <p className="text-brand-400/70 text-sm animate-pulse mb-4">{loadingMessages[loadingStep]}</p>
+                      
+                      {/* Progress Bar */}
+                      <div className="w-56 h-1.5 bg-luxury-950 rounded-full overflow-hidden border border-brand-900/50 mb-2">
+                        <div 
+                          className="h-full bg-brand-500 transition-all duration-200 ease-out"
+                          style={{ width: `${Math.min(100, Math.round(progress))}%` }}
+                        />
+                      </div>
+                      <p className="text-brand-400/50 text-xs font-mono">{Math.min(100, Math.round(progress))}%</p>
                    </div>
                 )}
                 
