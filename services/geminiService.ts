@@ -75,6 +75,31 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelay = 1000)
   }
 }
 
+// Magic Wand Service
+export const enhancePrompt = async (apiKey: string, simplePrompt: string): Promise<string> => {
+  if (!apiKey) throw new Error("API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey });
+
+  const systemInstruction = `
+    You are a prompt engineering expert for high-end AI image generation. 
+    Rewrite the user's simple prompt into a highly detailed, photorealistic prompt.
+    Include keywords for lighting, texture, camera angle, and aesthetic style.
+    Keep it concise but descriptive. Do not add conversational text, return ONLY the prompt string.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts: [{ text: simplePrompt }] },
+      config: { systemInstruction }
+    });
+    return response.text || simplePrompt;
+  } catch (e) {
+    console.error("Prompt enhancement failed", e);
+    return simplePrompt;
+  }
+};
+
 const generateSingleImage = async (
   ai: GoogleGenAI,
   parts: any[],

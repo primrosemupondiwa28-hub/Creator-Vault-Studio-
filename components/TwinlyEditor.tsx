@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users, User, Check, Feather } from 'lucide-react';
-import { generateEditedImage, CosmeticEnhancements } from '../services/geminiService';
+import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users, User, Check, Feather, MoveHorizontal, SlidersHorizontal } from 'lucide-react';
+import { generateEditedImage, CosmeticEnhancements, enhancePrompt } from '../services/geminiService';
 import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair, HairTexture } from '../types';
 
 interface TwinlyEditorProps {
@@ -17,8 +17,13 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
   
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'split' | 'single'>('split');
+  
+  // View Modes: 'split' | 'single' | 'compare'
+  const [viewMode, setViewMode] = useState<'split' | 'single' | 'compare'>('split');
+  const [sliderPosition, setSliderPosition] = useState(50);
+  
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('3:4');
   
   // Loading State
@@ -116,6 +121,19 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
       setIsGenerating(false);
     }
   };
+  
+  const handleEnhancePrompt = async () => {
+    if (!prompt.trim()) return;
+    setIsEnhancing(true);
+    try {
+      const improved = await enhancePrompt(apiKey, prompt);
+      setPrompt(improved);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   const currentGeneratedImage = generatedImages.length > 0 ? generatedImages[selectedImageIndex] : null;
 
@@ -207,6 +225,33 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
         </button>
 
         <div className="flex items-center gap-4">
+           {/* View Mode Toggle */}
+           <div className="flex items-center gap-1 bg-luxury-700 p-1 rounded-lg mr-2">
+              <button 
+                onClick={() => setViewMode('split')}
+                className={`p-2 rounded-md transition-all ${viewMode === 'split' ? 'bg-brand-600 text-white shadow-sm' : 'text-brand-300 hover:text-white hover:bg-luxury-600'}`}
+                title="Split View"
+              >
+                <SplitSquareHorizontal className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setViewMode('single')}
+                className={`p-2 rounded-md transition-all ${viewMode === 'single' ? 'bg-brand-600 text-white shadow-sm' : 'text-brand-300 hover:text-white hover:bg-luxury-600'}`}
+                title="Single View"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+              {currentGeneratedImage && (
+                <button 
+                  onClick={() => setViewMode('compare')}
+                  className={`p-2 rounded-md transition-all ${viewMode === 'compare' ? 'bg-brand-600 text-white shadow-sm' : 'text-brand-300 hover:text-white hover:bg-luxury-600'}`}
+                  title="Compare Slider"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                </button>
+              )}
+           </div>
+
            <div className="hidden md:flex items-center gap-2 bg-luxury-700 p-1 rounded-lg">
               {(['1:1', '3:4', '4:3', '16:9'] as AspectRatio[]).map((ratio) => (
                 <button
@@ -247,40 +292,92 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1"></div>
           </div>
 
-          <div className="relative w-full h-full max-w-5xl flex gap-4 mt-8">
+          <div className="relative w-full h-full max-w-5xl flex gap-4 mt-8 items-center justify-center">
+            
             {/* Split View */}
-            {(!currentGeneratedImage || viewMode === 'split') && (
-               <div className="flex-1 relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-brand-900/30 bg-luxury-800 flex items-center justify-center group">
-                  <img src={originalImage} className="max-w-full max-h-full object-contain" />
-                  <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-xs px-3 py-1 rounded-full border border-white/10 text-white/80">Reference</div>
+            {viewMode === 'split' && (
+              <>
+                 <div className="flex-1 relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-brand-900/30 bg-luxury-800 flex items-center justify-center group h-full">
+                    <img src={originalImage} className="max-w-full max-h-full object-contain" />
+                    <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-xs px-3 py-1 rounded-full border border-white/10 text-white/80">Reference</div>
+                 </div>
+                 
+                 {currentGeneratedImage && (
+                   <div className="flex-1 relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-emerald-500/30 bg-luxury-800 flex items-center justify-center h-full">
+                      <img src={currentGeneratedImage} className="max-w-full max-h-full object-contain" />
+                      <div className="absolute top-4 left-4 bg-emerald-600/90 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-emerald-400/30 z-10">
+                        <ShieldCheck className="w-3.5 h-3.5" /> 
+                        <span>TrueTone™</span>
+                      </div>
+                   </div>
+                 )}
+              </>
+            )}
+
+            {/* Single View (Only Generated) */}
+            {viewMode === 'single' && currentGeneratedImage && (
+               <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-emerald-500/30 bg-luxury-800 flex items-center justify-center h-full w-full">
+                  <img src={currentGeneratedImage} className="max-w-full max-h-full object-contain" />
                </div>
             )}
             
-            {/* Result View */}
-            {currentGeneratedImage && (
-              <div className="flex-1 relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-emerald-500/30 bg-luxury-800 flex items-center justify-center">
-                 <img src={currentGeneratedImage} className="max-w-full max-h-full object-contain" />
-                 
-                 {/* TrueTone Badge */}
-                 <div className="absolute top-4 left-4 bg-emerald-600/90 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-emerald-400/30 z-10">
-                   <ShieldCheck className="w-3.5 h-3.5" /> 
-                   <span>TrueTone™ Preserved</span>
-                 </div>
+            {/* Compare Mode (Slider) */}
+            {viewMode === 'compare' && currentGeneratedImage && (
+               <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-brand-900/30 bg-luxury-800 flex items-center justify-center h-full max-w-2xl mx-auto w-full aspect-[3/4] select-none">
+                  {/* Generated Image (Background) */}
+                  <img src={currentGeneratedImage} className="absolute inset-0 w-full h-full object-contain" />
+                  
+                  {/* Original Image (Foreground, clipped) */}
+                  <div 
+                    className="absolute inset-y-0 left-0 overflow-hidden border-r-2 border-white shadow-[0_0_20px_rgba(0,0,0,0.5)]"
+                    style={{ width: `${sliderPosition}%` }}
+                  >
+                     <img src={originalImage} className="absolute inset-0 w-full h-full object-contain object-left" style={{ width: '100vw', maxWidth: '42rem' }} /> {/* Note: Object-fit containment for comparison is tricky with different aspect ratios. Assuming user used crop tool or images are similar ratio. Ideal solution clamps images. */}
+                     {/* Better approach for comparison: Use background images for perfect overlay if dimensions match, or just simpler masking. 
+                         For this implementation, we will assume standard contain behavior. To make them line up perfectly, they must be rendered at same size.
+                         The simple CSS clipping above works best if images are identical dimensions. 
+                         Let's refine: We render both images fully, but clip the top one container.
+                     */}
+                  </div>
+                  <div 
+                     className="absolute inset-0 pointer-events-none"
+                  >
+                     <img src={originalImage} className="w-full h-full object-contain opacity-0" /> {/* Spacer to set container size */}
+                  </div>
+                  
+                  {/* Actual Slider Layer for perfect alignment attempt */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                     <div className="relative w-full h-full max-w-full max-h-full aspect-[3/4]">
+                        <img src={currentGeneratedImage} className="absolute inset-0 w-full h-full object-contain" />
+                        <div className="absolute inset-0 overflow-hidden border-r-2 border-white/80" style={{ width: `${sliderPosition}%` }}>
+                           <img src={originalImage} className="absolute inset-0 w-full h-full object-contain" />
+                        </div>
+                        
+                        {/* Handle */}
+                        <div 
+                           className="absolute inset-y-0" 
+                           style={{ left: `${sliderPosition}%` }}
+                        >
+                           <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-full shadow-xl flex items-center justify-center cursor-grab active:cursor-grabbing">
+                              <MoveHorizontal className="w-4 h-4 text-brand-900" />
+                           </div>
+                        </div>
+                     </div>
+                  </div>
 
-                 {/* NEW: Identity Locked Badge Bottom Right */}
-                 <div className="absolute bottom-4 right-4 flex items-center gap-3 bg-luxury-950/80 backdrop-blur-md px-4 py-2 rounded-xl border border-emerald-500/30 shadow-2xl z-10 hover:bg-luxury-950/95 transition-all cursor-help group/badge">
-                    <div className="bg-emerald-500/20 p-2 rounded-full ring-1 ring-emerald-500/30">
-                      <Lock className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <div className="flex flex-col">
-                       <div className="flex items-center gap-1.5">
-                         <span className="text-xs font-bold text-emerald-100 uppercase tracking-wide">Identity Locked</span>
-                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
-                       </div>
-                       <span className="text-[10px] text-emerald-400/70 font-medium">Features Preserved</span>
-                    </div>
-                 </div>
-              </div>
+                  {/* Range Input Control */}
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={sliderPosition}
+                    onChange={(e) => setSliderPosition(Number(e.target.value))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-30"
+                  />
+                  
+                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur px-2 py-1 rounded text-[10px] text-white pointer-events-none">Original</div>
+                  <div className="absolute bottom-4 right-4 bg-emerald-600/80 backdrop-blur px-2 py-1 rounded text-[10px] text-white pointer-events-none">TrueTone™</div>
+               </div>
             )}
 
             {isGenerating && (
@@ -327,11 +424,22 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
         {/* Controls */}
         <div className="w-full lg:w-96 bg-luxury-800 border-l border-brand-900/30 p-6 flex flex-col gap-8 overflow-y-auto">
            
-           {/* Prompt Section */}
+           {/* Prompt Section with Magic Wand */}
            <div className="space-y-4">
-             <div className="flex items-center gap-2 text-brand-200">
-               <Sparkles className="w-4 h-4 text-brand-500" />
-               <h3 className="font-serif font-semibold">Your Vision</h3>
+             <div className="flex items-center justify-between text-brand-200">
+               <div className="flex items-center gap-2">
+                 <Sparkles className="w-4 h-4 text-brand-500" />
+                 <h3 className="font-serif font-semibold">Your Vision</h3>
+               </div>
+               <button 
+                  onClick={handleEnhancePrompt}
+                  disabled={!prompt.trim() || isEnhancing}
+                  className="text-xs flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50"
+                  title="Enhance Prompt with AI"
+               >
+                  <Wand2 className={`w-3 h-3 ${isEnhancing ? 'animate-spin' : ''}`} />
+                  {isEnhancing ? 'Refining...' : 'Magic Wand'}
+               </button>
              </div>
              <textarea
                value={prompt}

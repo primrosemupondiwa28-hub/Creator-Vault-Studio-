@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, ShoppingBag, ArrowLeft, Wand2, RefreshCw, CheckCircle2, Sparkles, Layers } from 'lucide-react';
-import { generateCompositeImage } from '../services/geminiService';
+import { generateCompositeImage, enhancePrompt } from '../services/geminiService';
 import { GeneratedImage } from '../types';
 
 interface CreatorStudioProps {
@@ -16,6 +16,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({ apiKey, onBack, on
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   // Loading State
   const [loadingStep, setLoadingStep] = useState(0);
@@ -92,6 +93,19 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({ apiKey, onBack, on
       setIsGenerating(false);
     }
   };
+  
+  const handleEnhancePrompt = async () => {
+    if (!prompt.trim()) return;
+    setIsEnhancing(true);
+    try {
+      const improved = await enhancePrompt(apiKey, prompt);
+      setPrompt(improved);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   const currentImage = generatedImages.length > 0 ? generatedImages[selectedImageIndex] : null;
 
@@ -139,7 +153,17 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({ apiKey, onBack, on
              </div>
 
              <div className="bg-luxury-800 p-6 rounded-2xl border border-brand-900/30">
-                <h3 className="font-serif text-brand-100 mb-4">Scene Vision</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-serif text-brand-100">Scene Vision</h3>
+                  <button 
+                     onClick={handleEnhancePrompt}
+                     disabled={!prompt.trim() || isEnhancing}
+                     className="text-xs flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50"
+                  >
+                     <Wand2 className={`w-3 h-3 ${isEnhancing ? 'animate-spin' : ''}`} />
+                     {isEnhancing ? 'Refining...' : 'Magic Wand'}
+                  </button>
+                </div>
                 <textarea 
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}

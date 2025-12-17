@@ -15,13 +15,29 @@ import { SupportBot } from './components/SupportBot';
 import { AppState, ViewMode, GeneratedImage } from './types';
 
 const App: React.FC = () => {
-  const [state, setState] = useState<AppState>({
-    currentImage: null,
-    secondaryImage: null,
-    mimeType: '',
-    isGenerating: false,
-    error: null,
-    history: []
+  const [state, setState] = useState<AppState>(() => {
+    // Initialize history from localStorage if available
+    try {
+      const savedHistory = localStorage.getItem('creator_vault_history');
+      return {
+        currentImage: null,
+        secondaryImage: null,
+        mimeType: '',
+        isGenerating: false,
+        error: null,
+        history: savedHistory ? JSON.parse(savedHistory) : []
+      };
+    } catch (e) {
+      console.warn("Failed to load history from storage", e);
+      return {
+        currentImage: null,
+        secondaryImage: null,
+        mimeType: '',
+        isGenerating: false,
+        error: null,
+        history: []
+      };
+    }
   });
   
   const [view, setView] = useState<ViewMode>(ViewMode.HOME);
@@ -36,6 +52,24 @@ const App: React.FC = () => {
       setApiKey(storedKey);
     }
   }, []);
+
+  // Save history to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('creator_vault_history', JSON.stringify(state.history));
+    } catch (e) {
+      console.warn("Failed to save history to storage (likely quota exceeded)", e);
+      // Optional: If quota exceeded, we could try slicing the array to keep only recent items
+      if (state.history.length > 5) {
+         try {
+           const limitedHistory = state.history.slice(0, 5);
+           localStorage.setItem('creator_vault_history', JSON.stringify(limitedHistory));
+         } catch (retryError) {
+           console.error("Even limited history save failed", retryError);
+         }
+      }
+    }
+  }, [state.history]);
 
   // Gatekeeping function: Checks for API Key before allowing navigation to functional studios
   const handleNavigate = (targetView: ViewMode) => {
