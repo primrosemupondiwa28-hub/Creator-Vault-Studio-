@@ -9,6 +9,7 @@ import { VirtualTryOn } from './components/VirtualTryOn';
 import { MerchStudio } from './components/MerchStudio';
 import { ExplorePrompts } from './components/ExplorePrompts';
 import { CaptionGenerator } from './components/CaptionGenerator';
+import { BTSStudio } from './components/BTSStudio';
 import { Gallery } from './components/Gallery';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { SupportBot } from './components/SupportBot';
@@ -59,7 +60,6 @@ const App: React.FC = () => {
       localStorage.setItem('creator_vault_history', JSON.stringify(state.history));
     } catch (e) {
       console.warn("Failed to save history to storage (likely quota exceeded)", e);
-      // Optional: If quota exceeded, we could try slicing the array to keep only recent items
       if (state.history.length > 5) {
          try {
            const limitedHistory = state.history.slice(0, 5);
@@ -107,7 +107,6 @@ const App: React.FC = () => {
 
   const handleTwinlyUpload = (base64: string, mimeType: string) => {
     setState(prev => ({ ...prev, currentImage: base64, mimeType }));
-    // No need to check key here as they are already inside the "room" (Twinly Upload)
     setView(ViewMode.TWINLY_EDITOR);
   };
 
@@ -174,6 +173,14 @@ const App: React.FC = () => {
 
         {view === ViewMode.MERCH_STUDIO && (
           <MerchStudio 
+            apiKey={apiKey}
+            onBack={() => setView(ViewMode.HOME)}
+            onSaveToHistory={handleSaveToHistory}
+          />
+        )}
+
+        {view === ViewMode.BTS_STUDIO && (
+          <BTSStudio 
             apiKey={apiKey}
             onBack={() => setView(ViewMode.HOME)}
             onSaveToHistory={handleSaveToHistory}

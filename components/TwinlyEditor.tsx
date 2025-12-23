@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users, User, Check, Feather, MoveHorizontal, SlidersHorizontal } from 'lucide-react';
+import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, Sparkles, Smile, Palette, Image as ImageIcon, Upload, X, Layout, Hand, Droplets, Scissors, Users, User, Check, Feather, MoveHorizontal, SlidersHorizontal, AlertCircle } from 'lucide-react';
 import { generateEditedImage, CosmeticEnhancements, enhancePrompt } from '../services/geminiService';
 import { GeneratedImage, AspectRatio, SkinFinish, NailStyle, HairStyle, HairTarget, HairColor, FacialHair, HairTexture } from '../types';
 
@@ -45,16 +45,14 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
       setLoadingStep(0);
       setProgress(0);
       
-      // Cycle messages
       stepInterval = setInterval(() => {
         setLoadingStep((prev) => (prev + 1) % loadingMessages.length);
       }, 3000);
 
-      // Simulate progress (15s approx total time)
       progressInterval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 95) return 95;
-          const increment = Math.random() * 2 + 0.5; // Random increment between 0.5% and 2.5%
+          const increment = Math.random() * 2 + 0.5;
           return prev + increment;
         });
       }, 200);
@@ -91,16 +89,20 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
 
     try {
       const results = await generateEditedImage(
-        apiKey,
+        apiKey, // CORRECTED: Added apiKey as first parameter
         originalImage, 
         mimeType, 
         prompt || (enhancements.hairStyle !== 'default' ? "Apply hair transformation." : "Enhanced portrait."), 
-        true, // Always apply to subject
+        true, 
         enhancements,
         aspectRatio,
         customBackground
       );
       
+      if (results.length === 0) {
+        throw new Error("No images generated. Try a simpler prompt or clearer photo.");
+      }
+
       setProgress(100);
       setGeneratedImages(results);
       setSelectedImageIndex(0);
@@ -324,40 +326,24 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
             {/* Compare Mode (Slider) */}
             {viewMode === 'compare' && currentGeneratedImage && (
                <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-brand-900/30 bg-luxury-800 flex items-center justify-center h-full max-w-2xl mx-auto w-full aspect-[3/4] select-none">
-                  {/* Generated Image (Background) */}
                   <img src={currentGeneratedImage} className="absolute inset-0 w-full h-full object-contain" />
-                  
-                  {/* Original Image (Foreground, clipped) */}
                   <div 
                     className="absolute inset-y-0 left-0 overflow-hidden border-r-2 border-white shadow-[0_0_20px_rgba(0,0,0,0.5)]"
                     style={{ width: `${sliderPosition}%` }}
                   >
-                     <img src={originalImage} className="absolute inset-0 w-full h-full object-contain object-left" style={{ width: '100vw', maxWidth: '42rem' }} /> {/* Note: Object-fit containment for comparison is tricky with different aspect ratios. Assuming user used crop tool or images are similar ratio. Ideal solution clamps images. */}
-                     {/* Better approach for comparison: Use background images for perfect overlay if dimensions match, or just simpler masking. 
-                         For this implementation, we will assume standard contain behavior. To make them line up perfectly, they must be rendered at same size.
-                         The simple CSS clipping above works best if images are identical dimensions. 
-                         Let's refine: We render both images fully, but clip the top one container.
-                     */}
+                     <img src={originalImage} className="absolute inset-0 w-full h-full object-contain object-left" style={{ width: '100vw', maxWidth: '42rem' }} />
                   </div>
-                  <div 
-                     className="absolute inset-0 pointer-events-none"
-                  >
-                     <img src={originalImage} className="w-full h-full object-contain opacity-0" /> {/* Spacer to set container size */}
+                  <div className="absolute inset-0 pointer-events-none">
+                     <img src={originalImage} className="w-full h-full object-contain opacity-0" />
                   </div>
                   
-                  {/* Actual Slider Layer for perfect alignment attempt */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                      <div className="relative w-full h-full max-w-full max-h-full aspect-[3/4]">
                         <img src={currentGeneratedImage} className="absolute inset-0 w-full h-full object-contain" />
                         <div className="absolute inset-0 overflow-hidden border-r-2 border-white/80" style={{ width: `${sliderPosition}%` }}>
                            <img src={originalImage} className="absolute inset-0 w-full h-full object-contain" />
                         </div>
-                        
-                        {/* Handle */}
-                        <div 
-                           className="absolute inset-y-0" 
-                           style={{ left: `${sliderPosition}%` }}
-                        >
+                        <div className="absolute inset-y-0" style={{ left: `${sliderPosition}%` }}>
                            <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-full shadow-xl flex items-center justify-center cursor-grab active:cursor-grabbing">
                               <MoveHorizontal className="w-4 h-4 text-brand-900" />
                            </div>
@@ -365,7 +351,6 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                      </div>
                   </div>
 
-                  {/* Range Input Control */}
                   <input
                     type="range"
                     min="0"
@@ -389,7 +374,6 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                 <h3 className="text-2xl font-serif text-brand-100 mb-2">Designing Twin...</h3>
                 <p className="text-brand-400/80 font-medium animate-pulse mb-4 min-w-[200px] text-center">{loadingMessages[loadingStep]}</p>
                 
-                {/* Progress Bar */}
                 <div className="w-64 h-2 bg-luxury-950 rounded-full overflow-hidden border border-brand-900/50 mb-6">
                   <div 
                     className="h-full bg-brand-500 transition-all duration-200 ease-out"
@@ -403,6 +387,16 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                   <span>IDENTITY PRESERVATION ACTIVE</span>
                 </div>
               </div>
+            )}
+
+            {error && !isGenerating && (
+               <div className="absolute bottom-8 bg-rose-950/40 border border-rose-500/50 rounded-2xl p-4 flex items-start gap-3 shadow-2xl max-w-md animate-in slide-in-from-bottom-2">
+                  <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-rose-100 uppercase tracking-wide">Studio Error</p>
+                    <p className="text-[10px] text-rose-300 mt-1">{error}</p>
+                  </div>
+               </div>
             )}
           </div>
 
@@ -423,8 +417,7 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
 
         {/* Controls */}
         <div className="w-full lg:w-96 bg-luxury-800 border-l border-brand-900/30 p-6 flex flex-col gap-8 overflow-y-auto">
-           
-           {/* Prompt Section with Magic Wand */}
+           {/* Prompt Section */}
            <div className="space-y-4">
              <div className="flex items-center justify-between text-brand-200">
                <div className="flex items-center gap-2">
@@ -455,8 +448,6 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                 <Scissors className="w-4 h-4" /> Hair Studio
              </h3>
              <div className="space-y-4">
-               
-               {/* Hair Style Grid */}
                <div>
                  <label className="text-xs text-brand-400 font-medium mb-2 block">Hair Style</label>
                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-brand-900">
@@ -472,8 +463,6 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                    ))}
                  </div>
                </div>
-
-               {/* Hair Texture */}
                <div>
                   <label className="text-xs text-brand-400 font-medium mb-1.5 flex items-center gap-1">
                      <Feather className="w-3 h-3" /> Hair Texture
@@ -488,13 +477,8 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
                   </div>
                </div>
-
-               {/* Target Selector */}
                <div>
                  <label className="text-xs text-brand-400 font-medium mb-1.5 flex items-center gap-1">
                     <Users className="w-3 h-3" /> Apply To
@@ -511,8 +495,6 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                     ))}
                  </div>
                </div>
-
-               {/* Hair Color */}
                <div>
                  <label className="text-xs text-brand-400 font-medium mb-2 block">Hair Color</label>
                  <div className="flex flex-wrap gap-2">
@@ -523,34 +505,10 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                         className={`w-8 h-8 rounded-full border-2 transition-all relative group flex items-center justify-center ${enhancements.hairColor === opt.value ? 'border-brand-500 scale-110' : 'border-transparent opacity-70 hover:opacity-100 hover:scale-105'}`}
                         style={{ backgroundColor: opt.value === 'default' ? 'transparent' : opt.hex }}
                         title={opt.label}
-                      >
-                         {opt.value === 'default' && <div className="w-full h-0.5 bg-brand-400 -rotate-45" />}
-                      </button>
+                      />
                     ))}
                  </div>
                </div>
-
-               {/* Facial Hair */}
-               <div>
-                 <label className="text-xs text-brand-400 font-medium mb-1.5 flex items-center gap-1">
-                    <User className="w-3 h-3" /> Facial Hair (Men)
-                 </label>
-                 <div className="relative">
-                   <select
-                     value={enhancements.facialHair}
-                     onChange={(e) => setEnhancements(prev => ({...prev, facialHair: e.target.value as FacialHair}))}
-                     className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-sm text-brand-100 outline-none focus:border-brand-500 appearance-none"
-                   >
-                     {facialHairOptions.map(opt => (
-                       <option key={opt.value} value={opt.value}>{opt.label}</option>
-                     ))}
-                   </select>
-                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brand-500">
-                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                   </div>
-                 </div>
-               </div>
-
              </div>
            </div>
 
@@ -559,7 +517,6 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
              <h3 className="font-serif font-semibold text-brand-200 flex items-center gap-2">
                 <Palette className="w-4 h-4" /> Beauty Studio
              </h3>
-             
              <div className="grid grid-cols-2 gap-3">
                <button 
                  onClick={() => setEnhancements(p => ({...p, teethWhitening: !p.teethWhitening}))}
@@ -574,42 +531,6 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
                  <Sparkles className="w-4 h-4" /> Glamour Makeup
                </button>
              </div>
-
-             <div>
-                <label className="text-xs font-medium text-brand-300 mb-2 block">Skin Finish</label>
-                <div className="grid grid-cols-3 gap-2">
-                   {['default', 'matte', 'glowing'].map((f) => (
-                      <button
-                        key={f}
-                        onClick={() => setEnhancements(p => ({...p, skinFinish: f as SkinFinish}))}
-                        className={`py-2 px-1 rounded-lg text-[10px] uppercase tracking-wide border ${enhancements.skinFinish === f ? 'bg-brand-500 border-brand-500 text-white' : 'bg-luxury-900 border-brand-900/30 text-brand-400'}`}
-                      >
-                        {f}
-                      </button>
-                   ))}
-                </div>
-             </div>
-           </div>
-
-           {/* Background Upload */}
-           <div className="space-y-2">
-              <h3 className="font-serif font-semibold text-brand-200 flex items-center gap-2">
-                 <ImageIcon className="w-4 h-4" /> Custom Scene
-              </h3>
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-12 rounded-xl border border-dashed border-brand-900 hover:border-brand-500 flex items-center justify-center gap-2 cursor-pointer bg-luxury-900/50 transition-colors"
-              >
-                {customBackground ? (
-                  <span className="text-xs text-brand-300">Image Loaded (Click to change)</span>
-                ) : (
-                  <>
-                     <Upload className="w-3 h-3 text-brand-400" />
-                     <span className="text-xs text-brand-400">Upload Background (Optional)</span>
-                  </>
-                )}
-              </div>
-              <input type="file" ref={fileInputRef} onChange={handleBackgroundUpload} hidden />
            </div>
 
            <button
@@ -619,7 +540,6 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
            >
              {isGenerating ? 'Creating...' : 'Generate 4 Twins'}
            </button>
-
         </div>
       </div>
     </div>

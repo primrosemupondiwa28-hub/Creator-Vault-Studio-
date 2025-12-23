@@ -1,7 +1,6 @@
-
 export type AspectRatio = '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
 export type SkinFinish = 'default' | 'glowing' | 'matte' | 'dewy_satin';
-export type NailStyle = 'default' | 'french' | 'nude' | 'red' | 'black' | 'chrome';
+export type NailStyle = 'default' | 'french' | 'almond' | 'square' | 'stiletto' | 'nude' | 'red' | 'black' | 'chrome';
 export type HairStyle = 'default' | 'straight_sleek' | 'voluminous_blowout' | 'wavy_beachy' | 'curly_coily' | 'braids' | 'afro_natural' | 'updo_bun' | 'short_pixie' | 'bob_cut' | 'long_layers' | 'buzz_cut' | 'bald' | 'mohawk' | 'side_part' | 'curtain_bangs';
 export type HairTexture = 'default' | 'smooth_silky' | 'messy_tousled' | 'wet_look' | 'matte_dry' | 'glossy_shiny' | 'coarse_kinky';
 export type HairTarget = 'everyone' | 'women' | 'men' | 'children' | 'person_on_left' | 'person_on_right';
@@ -34,6 +33,7 @@ export enum ViewMode {
   UGC_STUDIO = 'UGC_STUDIO',
   VIRTUAL_TRYON = 'VIRTUAL_TRYON',
   MERCH_STUDIO = 'MERCH_STUDIO',
+  BTS_STUDIO = 'BTS_STUDIO',
   CAPTION_GENERATOR = 'CAPTION_GENERATOR',
   EXPLORE_PROMPTS = 'EXPLORE_PROMPTS',
   GALLERY = 'GALLERY'
