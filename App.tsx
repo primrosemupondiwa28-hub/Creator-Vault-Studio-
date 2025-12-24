@@ -10,6 +10,8 @@ import { MerchStudio } from './components/MerchStudio';
 import { ExplorePrompts } from './components/ExplorePrompts';
 import { CaptionGenerator } from './components/CaptionGenerator';
 import { BTSStudio } from './components/BTSStudio';
+import { DynamicIllustration } from './components/DynamicIllustration';
+import { PosterDrop } from './components/PosterDrop';
 import { Gallery } from './components/Gallery';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { SupportBot } from './components/SupportBot';
@@ -17,7 +19,6 @@ import { AppState, ViewMode, GeneratedImage } from './types';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
-    // Initialize history from localStorage if available
     try {
       const savedHistory = localStorage.getItem('creator_vault_history');
       return {
@@ -47,39 +48,25 @@ const App: React.FC = () => {
   const [pendingView, setPendingView] = useState<ViewMode | null>(null);
 
   useEffect(() => {
-    // Check local storage for existing key on mount
     const storedKey = localStorage.getItem('creator_vault_api_key');
     if (storedKey) {
       setApiKey(storedKey);
     }
   }, []);
 
-  // Save history to localStorage whenever it changes
   useEffect(() => {
     try {
       localStorage.setItem('creator_vault_history', JSON.stringify(state.history));
     } catch (e) {
       console.warn("Failed to save history to storage (likely quota exceeded)", e);
-      if (state.history.length > 5) {
-         try {
-           const limitedHistory = state.history.slice(0, 5);
-           localStorage.setItem('creator_vault_history', JSON.stringify(limitedHistory));
-         } catch (retryError) {
-           console.error("Even limited history save failed", retryError);
-         }
-      }
     }
   }, [state.history]);
 
-  // Gatekeeping function: Checks for API Key before allowing navigation to functional studios
   const handleNavigate = (targetView: ViewMode) => {
-    // Always allow navigation to Home
     if (targetView === ViewMode.HOME) {
       setView(ViewMode.HOME);
       return;
     }
-
-    // For all other views, require API key
     if (apiKey) {
       setView(targetView);
     } else {
@@ -92,8 +79,6 @@ const App: React.FC = () => {
     setApiKey(key);
     localStorage.setItem('creator_vault_api_key', key);
     setShowKeyModal(false);
-    
-    // Redirect to the view they were trying to access
     if (pendingView) {
       setView(pendingView);
       setPendingView(null);
@@ -187,6 +172,21 @@ const App: React.FC = () => {
           />
         )}
 
+        {view === ViewMode.DYNAMIC_ILLUSTRATION && (
+          <DynamicIllustration 
+            apiKey={apiKey}
+            onBack={() => setView(ViewMode.HOME)}
+          />
+        )}
+
+        {view === ViewMode.POSTER_DROP && (
+          <PosterDrop 
+            apiKey={apiKey}
+            onBack={() => setView(ViewMode.HOME)}
+            onSaveToHistory={handleSaveToHistory}
+          />
+        )}
+
         {view === ViewMode.CAPTION_GENERATOR && (
           <CaptionGenerator 
             apiKey={apiKey}
@@ -203,7 +203,6 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Global Support Assistant */}
       <SupportBot apiKey={apiKey} />
     </div>
   );

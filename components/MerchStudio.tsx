@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Box, CheckCircle2, Image as ImageIcon, Layers, Package, RefreshCw, Shirt, Smartphone, Sparkles, Upload, Book, BookOpen, Tablet } from 'lucide-react';
+import { ArrowLeft, Box, CheckCircle2, Image as ImageIcon, Layers, Package, RefreshCw, Shirt, Smartphone, Sparkles, Upload, Download, Trash2, Sliders, Palette, Layout, Loader2, AlertCircle, Maximize, Move } from 'lucide-react';
 import { generateMockup } from '../services/geminiService';
 import { GeneratedImage } from '../types';
 
@@ -9,307 +9,333 @@ interface MerchStudioProps {
   onSaveToHistory: (img: GeneratedImage) => void;
 }
 
+interface MockupResult {
+  product: string;
+  url: string | null;
+  loading: boolean;
+  error: string | null;
+}
+
 export const MerchStudio: React.FC<MerchStudioProps> = ({ apiKey, onBack, onSaveToHistory }) => {
-  const [designImage, setDesignImage] = useState<string | null>(null);
-  const [customBaseImage, setCustomBaseImage] = useState<string | null>(null);
-  
-  const [category, setCategory] = useState<'apparel' | 'packaging' | 'tech' | 'art' | 'books'>('apparel');
-  const [prompt, setPrompt] = useState('');
-  
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [artwork, setArtwork] = useState<string | null>(null);
+  const [productList, setProductList] = useState('mug\nt-shirt\nhoodie\ntote bag\nphone case');
+  const [scene, setScene] = useState('studio'); // studio, lifestyle, flat-lay, outdoor
+  const [config, setConfig] = useState({
+    scale: 60,
+    position: 'center' // top, center, bottom
+  });
 
-  // Loading State
-  const [loadingStep, setLoadingStep] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [results, setResults] = useState<MockupResult[]>([]);
+  const [isBatchRunning, setIsBatchRunning] = useState(false);
+  const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null);
 
-  const loadingMessages = [
-    "Warping design to geometry...",
-    "Calculating surface reflections...",
-    "Applying material textures...",
-    "Rendering studio lighting..."
+  const scenes = [
+    { id: 'studio', label: 'Pro Studio', icon: <Box className="w-3 h-3" /> },
+    { id: 'lifestyle', label: 'Lifestyle (Café)', icon: <Smartphone className="w-3 h-3" /> },
+    { id: 'flat-lay', label: 'Flat-Lay', icon: <Layout className="w-3 h-3" /> },
+    { id: 'outdoor', label: 'Outdoor / Street', icon: <Package className="w-3 h-3" /> },
   ];
 
-  useEffect(() => {
-    let stepInterval: any;
-    let progressInterval: any;
-
-    if (isGenerating) {
-      setLoadingStep(0);
-      setProgress(0);
-      
-      // Cycle messages
-      stepInterval = setInterval(() => {
-        setLoadingStep((prev) => (prev + 1) % loadingMessages.length);
-      }, 2500);
-
-      // Simulate progress
-      progressInterval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 95) return 95;
-          const increment = Math.random() * 2 + 0.5;
-          return prev + increment;
-        });
-      }, 200);
-    }
-    return () => {
-      clearInterval(stepInterval);
-      clearInterval(progressInterval);
-    };
-  }, [isGenerating]);
-
-  // Presets
-  const templates = {
-    apparel: [
-      { name: "Oversized Hoodie", material: "Heavy Cotton", icon: <Shirt className="w-4 h-4" /> },
-      { name: "Vintage Tee", material: "Washed Cotton", icon: <Shirt className="w-4 h-4" /> },
-      { name: "Beanie", material: "Wool Knit", icon: <Sparkles className="w-4 h-4" /> },
-    ],
-    packaging: [
-      { name: "Coffee Pouch", material: "Matte Foil", icon: <Package className="w-4 h-4" /> },
-      { name: "Cosmetic Jar", material: "Frosted Glass", icon: <Box className="w-4 h-4" /> },
-      { name: "Shipping Box", material: "Cardboard", icon: <Package className="w-4 h-4" /> },
-    ],
-    tech: [
-      { name: "iPhone Case", material: "Silicone", icon: <Smartphone className="w-4 h-4" /> },
-      { name: "MacBook Screen", material: "Digital Screen", icon: <Smartphone className="w-4 h-4" /> },
-    ],
-    art: [
-      { name: "Poster Frame", material: "Wood & Glass", icon: <ImageIcon className="w-4 h-4" /> },
-      { name: "Canvas Wrap", material: "Canvas", icon: <ImageIcon className="w-4 h-4" /> },
-    ],
-    books: [
-      { name: "Hardcover Novel", material: "Matte Jacket", icon: <Book className="w-4 h-4" /> },
-      { name: "Paperback Stack", material: "Paper Stock", icon: <BookOpen className="w-4 h-4" /> },
-      { name: "E-Book Reader", material: "E-Ink Screen", icon: <Tablet className="w-4 h-4" /> },
-      { name: "Open Magazine", material: "Glossy Paper", icon: <BookOpen className="w-4 h-4" /> },
-    ]
-  };
-
-  const [selectedTemplate, setSelectedTemplate] = useState(templates.apparel[0]);
-
-  const handleUpload = (setter: (s: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (ev) => ev.target?.result && setter(ev.target.result as string);
+      reader.onload = (ev) => ev.target?.result && setArtwork(ev.target.result as string);
       reader.readAsDataURL(file);
     }
   };
 
-  const handleGenerate = async () => {
-    if (!designImage) return;
-    setIsGenerating(true);
-    setGeneratedImages([]);
+  const handleGenerateBatch = async () => {
+    if (!artwork) return;
+    const products = productList.split('\n').filter(p => p.trim());
+    if (products.length === 0) return;
 
-    try {
-      const results = await generateMockup(
-        apiKey,
-        designImage,
-        customBaseImage, // Optional
-        customBaseImage ? "Custom Object" : selectedTemplate.name,
-        selectedTemplate.material,
-        prompt || "Professional studio lighting, clean minimal background",
-        '1:1'
-      );
-      
-      setProgress(100);
-      setGeneratedImages(results);
-      setSelectedImageIndex(0);
-      
-      if (results[0]) {
-        onSaveToHistory({
-          id: Date.now().toString(),
-          originalData: designImage,
-          generatedData: results[0],
-          prompt: `Mockup: ${selectedTemplate.name}`,
-          timestamp: Date.now(),
-          aspectRatio: '1:1'
-        });
+    setIsBatchRunning(true);
+    const initialResults: MockupResult[] = products.map(p => ({
+      product: p,
+      url: null,
+      loading: true,
+      error: null
+    }));
+    setResults(initialResults);
+    setSelectedResultIndex(null);
+
+    for (let i = 0; i < products.length; i++) {
+      try {
+        const url = await generateMockup(apiKey, artwork, products[i], scene, config);
+        if (url) {
+          setResults(prev => prev.map((res, idx) => 
+            idx === i ? { ...res, url, loading: false } : res
+          ));
+          onSaveToHistory({
+            id: `merch-${Date.now()}-${i}`,
+            originalData: artwork,
+            generatedData: url,
+            prompt: `Mockup: ${products[i]} in ${scene}`,
+            timestamp: Date.now(),
+            aspectRatio: '1:1'
+          });
+        }
+      } catch (err: any) {
+        setResults(prev => prev.map((res, idx) => 
+          idx === i ? { ...res, loading: false, error: err.message || "Failed" } : res
+        ));
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsGenerating(false);
     }
+    setIsBatchRunning(false);
+    if (products.length > 0) setSelectedResultIndex(0);
   };
 
-  const currentImage = generatedImages.length > 0 ? generatedImages[selectedImageIndex] : null;
+  const downloadAll = () => {
+    results.forEach((res, i) => {
+      if (res.url) {
+        const a = document.createElement('a');
+        a.href = res.url;
+        a.download = `mockup-${res.product.replace(/\s+/g, '-')}.png`;
+        a.click();
+      }
+    });
+  };
+
+  const activeResult = selectedResultIndex !== null ? results[selectedResultIndex] : null;
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-luxury-900 p-6 flex flex-col items-center">
-       <div className="w-full max-w-6xl flex justify-between items-center mb-8">
-          <button onClick={onBack} className="flex items-center gap-2 text-brand-300 hover:text-white transition-colors">
-             <ArrowLeft className="w-4 h-4" /> Home
-          </button>
-          <div className="flex items-center gap-2">
-            <Layers className="w-6 h-6 text-brand-500" />
-            <h2 className="text-2xl font-serif text-brand-100">Merch Studio</h2>
+      <div className="w-full max-w-7xl flex justify-between items-center mb-8">
+        <button onClick={onBack} className="flex items-center gap-2 text-brand-300 hover:text-white transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Home
+        </button>
+        <div className="flex flex-col items-center">
+          <div className="flex items-center gap-2 text-teal-400">
+            <Package className="w-6 h-6" />
+            <h2 className="text-2xl font-serif text-brand-100 font-bold">Merch Studio</h2>
           </div>
-          <div className="w-20" />
-       </div>
+          <p className="text-[10px] text-brand-400 uppercase tracking-widest font-bold mt-1">High-Fidelity Mockup Forge</p>
+        </div>
+        <div className="w-20" />
+      </div>
 
-       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+        
+        {/* Left Control Panel */}
+        <div className="lg:col-span-4 space-y-6 overflow-y-auto max-h-[80vh] scrollbar-hide pr-2">
           
-          {/* Left Panel: Inputs */}
-          <div className="lg:col-span-4 space-y-6">
-             
-             {/* Step 1: Design Upload */}
-             <div className="bg-luxury-800 p-5 rounded-2xl border border-brand-900/30">
-                <label className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-4 block flex items-center gap-2">
-                   1. Your Design / Logo
-                </label>
-                <div className="aspect-square bg-luxury-900 rounded-xl border-2 border-dashed border-brand-900 hover:border-brand-500/50 transition-colors relative flex flex-col items-center justify-center overflow-hidden">
-                   {designImage ? (
-                      <img src={designImage} className="w-full h-full object-contain p-4" />
-                   ) : (
-                      <div className="text-center p-4">
-                         <div className="w-12 h-12 bg-brand-900/20 rounded-full flex items-center justify-center mx-auto mb-2 text-brand-400">
-                           <ImageIcon className="w-6 h-6" />
-                         </div>
-                         <p className="text-brand-200 font-serif text-sm">Upload Graphic</p>
-                      </div>
-                   )}
-                   <input type="file" onChange={handleUpload(setDesignImage)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                </div>
-             </div>
-
-             {/* Step 2: Product Selection */}
-             <div className="bg-luxury-800 p-5 rounded-2xl border border-brand-900/30">
-                <label className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-4 block flex items-center gap-2">
-                   2. Choose Product
-                </label>
-                
-                {/* Categories */}
-                <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-brand-900">
-                   {(['apparel', 'packaging', 'tech', 'art', 'books'] as const).map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => { setCategory(cat); setSelectedTemplate(templates[cat][0]); setCustomBaseImage(null); }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${category === cat ? 'bg-brand-600 text-white' : 'bg-luxury-900 text-brand-300 hover:text-white'}`}
-                      >
-                        {cat}
-                      </button>
-                   ))}
-                </div>
-
-                {/* Templates Grid */}
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                   {templates[category].map((t) => (
-                      <button
-                        key={t.name}
-                        onClick={() => { setSelectedTemplate(t); setCustomBaseImage(null); }}
-                        className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all ${selectedTemplate.name === t.name && !customBaseImage ? 'bg-brand-900/40 border-brand-500 ring-1 ring-brand-500/20' : 'bg-luxury-900 border-transparent hover:border-brand-900'}`}
-                      >
-                         <div className={`p-2 rounded-full ${selectedTemplate.name === t.name && !customBaseImage ? 'bg-brand-500 text-white' : 'bg-luxury-800 text-brand-400'}`}>
-                           {t.icon}
-                         </div>
-                         <div>
-                            <p className="text-xs font-bold text-brand-100">{t.name}</p>
-                            <p className="text-[10px] text-brand-400/60">{t.material}</p>
-                         </div>
-                      </button>
-                   ))}
-                </div>
-
-                {/* OR Custom Base */}
-                <div className="relative border-t border-brand-900/30 pt-4 mt-2">
-                   <p className="text-[10px] text-brand-400 text-center mb-2 bg-luxury-800 absolute -top-2.5 left-1/2 -translate-x-1/2 px-2">OR</p>
-                   <div className={`w-full h-12 rounded-xl border border-dashed flex items-center justify-center gap-2 cursor-pointer transition-colors relative ${customBaseImage ? 'border-brand-500 bg-brand-500/10' : 'border-brand-900 hover:border-brand-500 bg-luxury-900/50'}`}>
-                      {customBaseImage ? (
-                         <span className="text-xs text-brand-300">Custom Base Loaded</span>
-                      ) : (
-                         <>
-                           <Upload className="w-3 h-3 text-brand-400" />
-                           <span className="text-xs text-brand-400">Upload Custom Base Image</span>
-                         </>
-                      )}
-                      <input type="file" onChange={handleUpload(setCustomBaseImage)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                   </div>
-                </div>
-             </div>
-
-             {/* Step 3: Vibe */}
-             <div className="bg-luxury-800 p-5 rounded-2xl border border-brand-900/30">
-                <label className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-2 block">
-                   3. Scene & Lighting
-                </label>
-                <textarea 
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="e.g., 'Sitting on a minimalist concrete table', 'Warm sunset lighting', 'Cyberpunk neon background'."
-                  className="w-full h-20 bg-luxury-900 rounded-xl border border-brand-900/50 p-3 text-brand-50 focus:border-brand-500 outline-none text-xs"
-                />
-             </div>
-             
-             <button
-               onClick={handleGenerate}
-               disabled={!designImage || isGenerating}
-               className="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:to-brand-400 text-white font-serif font-bold tracking-wide rounded-xl shadow-xl shadow-brand-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-             >
-               {isGenerating ? 'Rendering Mockup...' : 'Generate 4 Mockups'}
-             </button>
-          </div>
-
-          {/* Right Panel: Visualization */}
-          <div className="lg:col-span-8 flex flex-col gap-4">
-             <div className="bg-luxury-800 rounded-3xl p-6 flex-1 flex flex-col items-center justify-center border border-brand-900/30 relative overflow-hidden min-h-[500px] shadow-2xl">
-                {isGenerating && (
-                   <div className="absolute inset-0 bg-luxury-900/90 backdrop-blur z-10 flex flex-col items-center justify-center">
-                      <div className="relative mb-6">
-                         <div className="w-16 h-16 rounded-full border-4 border-brand-900 border-t-brand-500 animate-spin"></div>
-                         <RefreshCw className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-brand-400" />
-                      </div>
-                      <p className="font-serif text-2xl text-brand-100 mb-2">Applying Design...</p>
-                      <p className="text-brand-400/70 text-sm animate-pulse mb-4">{loadingMessages[loadingStep]}</p>
-                      
-                      {/* Progress Bar */}
-                      <div className="w-56 h-1.5 bg-luxury-950 rounded-full overflow-hidden border border-brand-900/50 mb-2">
-                        <div 
-                          className="h-full bg-brand-500 transition-all duration-200 ease-out"
-                          style={{ width: `${Math.min(100, Math.round(progress))}%` }}
-                        />
-                      </div>
-                      <p className="text-brand-400/50 text-xs font-mono">{Math.min(100, Math.round(progress))}%</p>
-                   </div>
-                )}
-                
-                {currentImage ? (
-                   <img src={currentImage} className="w-full h-full object-contain rounded-xl shadow-lg" />
-                ) : (
-                   <div className="text-center text-brand-400/30">
-                      <Box className="w-24 h-24 mx-auto mb-4 opacity-30" />
-                      <p className="font-serif text-3xl">Mockup Preview</p>
-                      <p className="text-sm mt-3 max-w-xs mx-auto">Upload your logo and select a product to visualize professional merchandise.</p>
-                   </div>
-                )}
-             </div>
-
-             {/* Thumbnails */}
-             {generatedImages.length > 0 && (
-               <div className="w-full bg-luxury-800 p-4 rounded-2xl border border-brand-900/30 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                  <div className="flex gap-4">
-                     {generatedImages.map((img, i) => (
-                        <div 
-                          key={i} 
-                          onClick={() => setSelectedImageIndex(i)}
-                          className={`relative w-28 aspect-square rounded-xl overflow-hidden cursor-pointer flex-shrink-0 border-2 transition-all ${selectedImageIndex === i ? 'border-brand-500 scale-105 shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                        >
-                           <img src={img} className="w-full h-full object-cover" />
-                           {selectedImageIndex === i && (
-                              <div className="absolute inset-0 bg-brand-500/20 flex items-center justify-center">
-                                 <CheckCircle2 className="w-8 h-8 text-white drop-shadow-md" />
-                              </div>
-                           )}
-                        </div>
-                     ))}
+          {/* 1. Artwork Upload */}
+          <div className="bg-luxury-800 p-5 rounded-2xl border border-brand-900/30">
+            <label className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-4 block">
+              1. Upload Artwork
+            </label>
+            <div className={`aspect-square bg-luxury-950 rounded-xl border-2 border-dashed transition-all relative flex flex-col items-center justify-center overflow-hidden group ${artwork ? 'border-brand-500/50' : 'border-brand-900 hover:border-teal-500/50'}`}>
+              {artwork ? (
+                <>
+                  <img src={artwork} className="w-full h-full object-contain p-4" />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <button onClick={() => setArtwork(null)} className="p-2 bg-rose-600 rounded-full text-white shadow-lg"><Trash2 className="w-4 h-4"/></button>
                   </div>
-               </div>
-             )}
+                </>
+              ) : (
+                <div className="text-center p-6">
+                  <Upload className="w-12 h-12 text-brand-900 mx-auto mb-3 group-hover:text-teal-500 transition-colors" />
+                  <p className="text-brand-200 font-serif text-sm">Drop Graphic</p>
+                  <p className="text-[10px] text-brand-400/60 mt-1">PNG with transparency best</p>
+                </div>
+              )}
+              {!artwork && <input type="file" onChange={handleUpload} className="absolute inset-0 opacity-0 cursor-pointer" />}
+            </div>
           </div>
 
-       </div>
+          {/* 2. Product Options */}
+          <div className="bg-luxury-800 p-5 rounded-2xl border border-brand-900/30">
+            <label className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-3 block">
+              2. Target Products
+            </label>
+            <textarea
+              value={productList}
+              onChange={(e) => setProductList(e.target.value)}
+              className="w-full h-32 bg-luxury-950 border border-brand-900 rounded-xl p-3 text-xs text-brand-50 outline-none focus:border-teal-500 transition-all font-mono scrollbar-thin scrollbar-thumb-brand-900"
+              placeholder="One product per line..."
+            />
+            <p className="text-[10px] text-brand-400/50 mt-2">Example: Ceramic Mug, Oversized Hoodie, iPhone 15 Case</p>
+          </div>
+
+          {/* 3. Scene Selector */}
+          <div className="bg-luxury-800 p-5 rounded-2xl border border-brand-900/30">
+            <label className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-4 block">
+              3. Scene Environment
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {scenes.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => setScene(s.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border transition-all ${scene === s.id ? 'bg-teal-600 border-teal-500 text-white' : 'bg-luxury-900 border-brand-900/50 text-brand-300 hover:border-teal-500/50'}`}
+                >
+                  {s.icon}
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. Controls */}
+          <div className="bg-luxury-800 p-5 rounded-2xl border border-brand-900/30 space-y-4">
+            <h3 className="text-xs font-bold text-brand-500 uppercase tracking-wider flex items-center gap-2">
+              <Sliders className="w-3 h-3" /> Realism Controls
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] font-bold text-brand-400">ARTWORK SCALE</span>
+                  <span className="text-[10px] font-mono text-teal-500">{config.scale}%</span>
+                </div>
+                <input 
+                  type="range" min="10" max="100" 
+                  value={config.scale}
+                  onChange={(e) => setConfig({...config, scale: parseInt(e.target.value)})}
+                  className="w-full h-1 bg-brand-900 rounded-full appearance-none accent-teal-500" 
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-brand-400 font-bold uppercase block mb-2">Vertical Placement</label>
+                <div className="flex gap-2">
+                  {['top', 'center', 'bottom'].map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setConfig({...config, position: p})}
+                      className={`flex-1 py-1.5 rounded-md text-[10px] font-bold border capitalize transition-all ${config.position === p ? 'bg-brand-600 border-brand-500 text-white' : 'bg-luxury-900 border-brand-900/50 text-brand-400'}`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleGenerateBatch}
+            disabled={!artwork || isBatchRunning}
+            className="w-full py-4 bg-gradient-to-r from-teal-600 to-brand-600 hover:to-teal-500 text-white font-serif font-bold tracking-wide rounded-xl shadow-xl shadow-teal-900/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+          >
+            {isBatchRunning ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Processing Batch...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-5 h-5" />
+                Generate All Mockups
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Right Preview Panel */}
+        <div className="lg:col-span-8 flex flex-col gap-4">
+          
+          {/* Main Display Area */}
+          <div className="flex-1 bg-luxury-800 rounded-3xl border border-brand-900/30 p-6 shadow-2xl relative flex flex-col min-h-[500px]">
+            {activeResult ? (
+              <div className="w-full h-full flex flex-col">
+                <div className="flex justify-between items-center mb-4 pb-4 border-b border-brand-900/30">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-brand-900/50 rounded-full text-[10px] font-bold text-teal-400 uppercase tracking-widest border border-teal-500/20">
+                      {activeResult.product}
+                    </span>
+                    <span className="text-[10px] text-brand-400">• High Resolution 3000px Render</span>
+                  </div>
+                  {activeResult.url && (
+                    <button 
+                      onClick={() => {
+                        const a = document.createElement('a');
+                        a.href = activeResult.url!;
+                        a.download = `mockup-${activeResult.product}.png`;
+                        a.click();
+                      }}
+                      className="p-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex-1 flex items-center justify-center relative overflow-hidden bg-luxury-950 rounded-2xl group">
+                  {activeResult.loading ? (
+                    <div className="flex flex-col items-center gap-4">
+                      <Loader2 className="w-12 h-12 text-teal-500 animate-spin" />
+                      <p className="text-brand-300 font-serif text-lg">Rendering {activeResult.product}...</p>
+                    </div>
+                  ) : activeResult.error ? (
+                    <div className="text-center p-8">
+                       <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+                       <p className="text-brand-100">{activeResult.error}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <img src={activeResult.url!} className="max-w-full max-h-full object-contain shadow-2xl" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                         <div className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-full font-bold text-xs shadow-xl animate-in zoom-in">
+                            <CheckCircle2 className="w-4 h-4" /> Ready for Print
+                         </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center p-12 text-brand-400/20">
+                <Box className="w-24 h-24 mb-6 opacity-5" />
+                <h3 className="text-3xl font-serif mb-2">Merch Forge</h3>
+                <p className="max-w-md text-sm">Upload your artwork and define your product line. Gemini 2.5 Flash Image will handle the material physics and lighting.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Result Thumbnails Strip */}
+          {results.length > 0 && (
+            <div className="bg-luxury-800 p-4 rounded-2xl border border-brand-900/30 flex justify-between items-center">
+              <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+                {results.map((res, i) => (
+                  <div 
+                    key={i}
+                    onClick={() => setSelectedResultIndex(i)}
+                    className={`relative w-24 aspect-square flex-shrink-0 cursor-pointer rounded-xl overflow-hidden border-2 transition-all ${selectedResultIndex === i ? 'border-teal-500 scale-105 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                  >
+                    {res.loading ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-luxury-900">
+                        <Loader2 className="w-5 h-5 text-brand-500 animate-spin" />
+                      </div>
+                    ) : res.url ? (
+                      <img src={res.url} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-luxury-900">
+                        <AlertCircle className="w-5 h-5 text-rose-500" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm text-[8px] font-bold text-white text-center py-1 truncate px-1 uppercase">
+                      {res.product}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <button 
+                onClick={downloadAll}
+                className="ml-4 flex flex-col items-center gap-1 text-brand-400 hover:text-teal-400 transition-colors"
+                title="Download All as ZIP (simulated)"
+              >
+                <div className="p-3 bg-luxury-900 rounded-full border border-brand-900">
+                  <Download className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold uppercase">Export All</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
-}
+};

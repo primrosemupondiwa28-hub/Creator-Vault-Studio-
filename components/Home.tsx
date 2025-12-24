@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, ShoppingBag, Shirt, Lightbulb, Smartphone, Star, Quote, MessageSquareText, ArrowRight, Sparkles, Layers, Clapperboard } from 'lucide-react';
+import { Camera, ShoppingBag, Shirt, Lightbulb, Smartphone, Star, Quote, MessageSquareText, ArrowRight, Sparkles, Layers, Clapperboard, Palette, Globe } from 'lucide-react';
 import { ViewMode } from '../types';
 
 interface HomeProps {
@@ -18,6 +18,28 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       color: 'text-brand-200',
       bgHover: 'group-hover:bg-brand-900/40',
       borderHover: 'group-hover:border-brand-500/50'
+    },
+    {
+      id: 'posterdrop',
+      title: 'PosterDrop',
+      subtitle: 'Global Signage',
+      description: 'Visualize your marketing posters in world-famous locations. NYC billboards to Tokyo metro lightboxes.',
+      icon: <Globe className="w-6 h-6" />,
+      action: () => onNavigate(ViewMode.POSTER_DROP),
+      color: 'text-blue-300',
+      bgHover: 'group-hover:bg-blue-900/40',
+      borderHover: 'group-hover:border-blue-500/50'
+    },
+    {
+      id: 'illustration',
+      title: 'Illustration Forge',
+      subtitle: 'Mascot Variation',
+      description: 'Generate consistent variations for avatars and mascots. Emotions, poses, and props with brand lock.',
+      icon: <Palette className="w-6 h-6" />,
+      action: () => onNavigate(ViewMode.DYNAMIC_ILLUSTRATION),
+      color: 'text-amber-300',
+      bgHover: 'group-hover:bg-amber-900/40',
+      borderHover: 'group-hover:border-amber-500/50'
     },
     {
       id: 'bts',
@@ -84,17 +106,6 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       color: 'text-blue-200',
       bgHover: 'group-hover:bg-blue-900/40',
       borderHover: 'group-hover:border-blue-500/50'
-    },
-    {
-      id: 'explore',
-      title: 'Style Library',
-      subtitle: 'Prompt Laboratory',
-      description: 'Browse curated luxury styles, lighting guides, and creative ideas for your next session.',
-      icon: <Lightbulb className="w-6 h-6" />,
-      action: () => onNavigate(ViewMode.EXPLORE_PROMPTS),
-      color: 'text-amber-200',
-      bgHover: 'group-hover:bg-amber-900/40',
-      borderHover: 'group-hover:border-amber-500/50'
     }
   ];
 

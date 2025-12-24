@@ -9,31 +9,31 @@ const cleanBase64 = (base64: string): string => {
 };
 
 export interface CosmeticEnhancements {
-  teethWhitening: boolean;
-  eyeBrightening: boolean;
-  makeupMode: boolean;
-  skinFinish: SkinFinish;
-  nailStyle: NailStyle;
-  hairStyle: HairStyle;
-  hairTexture: HairTexture;
-  hairTarget: HairTarget;
-  hairColor: HairColor;
-  facialHair: FacialHair;
+  teethWhitening?: boolean;
+  eyeBrightening?: boolean;
+  makeupMode?: boolean;
+  skinFinish?: SkinFinish;
+  nailStyle?: NailStyle;
+  hairStyle?: HairStyle;
+  hairTexture?: HairTexture;
+  hairTarget?: HairTarget;
+  hairColor?: HairColor;
+  facialHair?: FacialHair;
 }
 
 export type SocialPlatform = 'instagram' | 'tiktok' | 'facebook' | 'twitter';
+
+export interface CaptionOptions {
+  tone: string;
+  includeHashtags: boolean;
+  includeEmojis: boolean;
+}
 
 export interface SocialCaptions {
   instagram?: string;
   tiktok?: string;
   facebook?: string;
   twitter?: string;
-}
-
-export interface CaptionOptions {
-  tone: string;
-  includeHashtags: boolean;
-  includeEmojis: boolean;
 }
 
 export interface UGCPlanRequest {
@@ -46,19 +46,37 @@ export interface UGCPlanRequest {
   imageBase64?: string | null;
 }
 
-export interface UGCScene {
-  timeRange: string;
-  visual: string;
-  audio: string;
-}
-
 export interface UGCVideoPlan {
   title: string;
   viralHook: string;
-  scenes: UGCScene[];
+  scenes: {
+    timeRange: string;
+    visual: string;
+    audio: string;
+  }[];
   caption: string;
   hashtags: string[];
   postingTips: string;
+}
+
+export interface UGCVideoWorkflowScene {
+  id: number;
+  title: string;
+  visualPrompt: string;
+  veoConfig: string; // JSON string
+}
+
+export interface UGCVideoWorkflow {
+  scenes: UGCVideoWorkflowScene[];
+}
+
+export interface IllustrationConfig {
+  primaryColor: string;
+  secondaryColor: string;
+  strictPalette: boolean;
+  styleLock: boolean;
+  intensity: number;
+  propSize: number;
 }
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelay = 1000): Promise<T> {
@@ -75,28 +93,6 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelay = 1000)
   }
 }
 
-// Magic Wand Service
-export const enhancePrompt = async (apiKey: string, simplePrompt: string): Promise<string> => {
-  if (!apiKey) throw new Error("API Key is missing.");
-  const ai = new GoogleGenAI({ apiKey });
-
-  const systemInstruction = `
-    You are a prompt engineering expert. 
-    Rewrite the user's prompt into a photorealistic, highly detailed description.
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: simplePrompt }] },
-      config: { systemInstruction }
-    });
-    return response.text || simplePrompt;
-  } catch (e) {
-    return simplePrompt;
-  }
-};
-
 const generateSingleImage = async (
   ai: GoogleGenAI,
   parts: any[],
@@ -109,21 +105,11 @@ const generateSingleImage = async (
         contents: { parts },
         config: {
           responseModalities: [Modality.IMAGE],
-          imageConfig: {
-            aspectRatio: aspectRatio,
-          }
+          imageConfig: { aspectRatio }
         },
       });
-
-      // Find the image part in candidates
-      const candidate = response.candidates?.[0];
-      if (!candidate) return null;
-      
-      const part = candidate.content?.parts?.find(p => p.inlineData);
-      if (part && part.inlineData && part.inlineData.data) {
-        return `data:image/png;base64,${part.inlineData.data}`;
-      }
-      return null;
+      const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+      return part?.inlineData ? `data:image/png;base64,${part.inlineData.data}` : null;
     });
   } catch (e) {
     console.error("Image generation failed:", e);
@@ -131,283 +117,230 @@ const generateSingleImage = async (
   }
 };
 
-// BTS Generator Logic
-export const generateBTSImage = async (
+export const generateUGCPoster = async (
   apiKey: string,
-  imageBase64: string,
-  title: string,
-  characters: string,
-  era: string,
-  vibe: string,
-  energy: string,
-  phase: string = "On-Set Break",
-  aesthetic: string = "Raw Handheld",
-  aspectRatio: AspectRatio = '9:16'
+  productBase64: string,
+  characterBase64: string,
+  vibeDescription: string,
+  aspectRatio: AspectRatio
 ): Promise<string[]> => {
-  if (!apiKey) throw new Error("API Key is missing.");
   const ai = new GoogleGenAI({ apiKey });
-
   const systemPrompt = `
-    ROLE: Production Photographer.
-    TASK: Generate a photorealistic BTS still of the User (Input 1) with the cast members: ${characters}.
+    ROLE: Authentic UGC Content Creator.
+    TASK: Create 4 professional yet AUTHENTIC UGC (User Generated Content) STYLE advertising posters.
     
-    CELEBRITY ACCURACY: Match the exact facial features of ${characters}.
-    USER IDENTITY: Preserve the face from Input 1 100%.
-    CONTEXT: On the set of "${title}" during ${phase}.
-    AESTHETIC: ${aesthetic}.
+    COMPOSITION PROTOCOL:
+    1. SUBJECT INTEGRATION: Seamlessly merge the Character (Input 2) and Product (Input 1). 
+    2. INTERACTION: The character MUST be naturally holding, wearing, or using the product. 
+    3. STRICT PRODUCT LOCK: Input 1 contains the product. You MUST preserve the EXACT design, text, labels, branding, and shape of the product in Input 1. Do not hallucinate different words or change the packaging design.
+    4. REALISM ENGINE: Apply physically accurate contact shadows and subtle drop shadows beneath the product to ground it in the character's environment.
+    5. STYLE & VIBE: ${vibeDescription}. 
+    6. AESTHETIC: Authentic UGC style. Should look like a real photo taken by a person at home, in a car, or a public space. Use natural, non-studio lighting. No artificial "brand" backdrops.
+    7. OUTPUT: High-fidelity 4K quality variations. Generate 4 distinct variations of pose and candid angle.
   `;
 
   const parts = [
-    { inlineData: { data: cleanBase64(imageBase64), mimeType: 'image/png' } },
+    { inlineData: { data: cleanBase64(productBase64), mimeType: 'image/png' } },
+    { inlineData: { data: cleanBase64(characterBase64), mimeType: 'image/png' } },
     { text: systemPrompt }
   ];
 
   const promises = Array(4).fill(null).map(async (_, index) => {
-    if (index > 0) await new Promise(resolve => setTimeout(resolve, index * 600));
+    // Add a slight stagger to avoid identical simultaneous requests if the model is deterministic
+    if (index > 0) await new Promise(resolve => setTimeout(resolve, index * 200));
     return generateSingleImage(ai, parts, aspectRatio);
   });
-  
+
   const results = await Promise.all(promises);
   return results.filter((res): res is string => res !== null);
 };
 
-export const generateBTSVideo = async (
+export const generateUGCVideoWorkflow = async (
   apiKey: string,
-  firstFrameBase64: string,
-  title: string,
-  characters: string,
-  aesthetic: string = "Raw Handheld"
-): Promise<string> => {
-  if (!apiKey) throw new Error("API Key is missing.");
+  posterBase64: string,
+  aspectRatio: AspectRatio
+): Promise<UGCVideoWorkflow> => {
   const ai = new GoogleGenAI({ apiKey });
-
   const prompt = `
-    A viral behind-the-scenes video from the set of "${title}". 
-    Features the user and ${characters} interacting candidly.
-    Camera Style: Handheld, raw, authentic.
+    Analyze the advertising poster in Input 1. 
+    Create a 40-second cinematic video plan with EXACTLY 5 distinct scenes (8s each).
+    
+    REQUIRED SCENE LIST:
+    1. Unboxing macro shot
+    2. Product in action (Character using it)
+    3. Close-up texture detail
+    4. Lifestyle shot with background (Environment focus)
+    5. Call-to-action with logo and URL placement
+    
+    For EACH scene, provide:
+    - 'visualPrompt': A descriptive prompt for an image generator to create a still for this scene, keeping the character and product identical to the poster.
+    - 'veoConfig': A valid JSON string following Veo 3 schema: {"camera": "...", "lens": "...", "movement": "...", "lighting": "...", "framing": "..."}. Camera should use smooth dolly/zoom motions. 
+    
+    Return as JSON with 'scenes' array.
   `;
 
-  let operation = await ai.models.generateVideos({
-    model: 'veo-3.1-fast-generate-preview',
-    prompt: prompt,
-    image: {
-      imageBytes: cleanBase64(firstFrameBase64),
-      mimeType: 'image/png',
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: { 
+      parts: [
+        { inlineData: { data: cleanBase64(posterBase64), mimeType: 'image/png' } },
+        { text: prompt }
+      ] 
     },
     config: {
-      numberOfVideos: 1,
-      resolution: '720p',
-      aspectRatio: '9:16'
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          scenes: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.NUMBER },
+                title: { type: Type.STRING },
+                visualPrompt: { type: Type.STRING },
+                veoConfig: { type: Type.STRING }
+              }
+            }
+          }
+        }
+      }
     }
   });
 
-  while (!operation.done) {
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    operation = await ai.operations.getVideosOperation({ operation: operation });
-  }
+  return JSON.parse(response.text);
+};
 
+export const generateSceneImage = async (
+  apiKey: string,
+  posterBase64: string,
+  scenePrompt: string,
+  aspectRatio: AspectRatio
+): Promise<string | null> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const parts = [
+    { inlineData: { data: cleanBase64(posterBase64), mimeType: 'image/png' } },
+    { text: `Generate a context-aware cinematic still for this scene: "${scenePrompt}". Strictly preserve the character's facial features and the EXACT product design and labels from the poster.` }
+  ];
+  return generateSingleImage(ai, parts, aspectRatio);
+};
+
+export const generateUGCCreativeIdeas = async (
+  apiKey: string,
+  productBase64: string | null,
+  userMessage: string
+): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const parts: any[] = [];
+  if (productBase64) {
+    parts.push({ inlineData: { data: cleanBase64(productBase64), mimeType: 'image/png' } });
+  }
+  parts.push({ text: `ROLE: UGC Creative Director. TASK: Brainstorm viral backgrounds, hooks, and scene ideas. USER: "${userMessage}". Suggest authentic UGC settings like "Messy morning kitchen counter", "Candid car interior selfie", "Cozy unmade bed", or "Busy coffee shop window seat".` });
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: { parts }
+  });
+  return response.text;
+};
+
+export const generateIllustrationVariation = async (apiKey: string, baseImage: string, variationPrompt: string, config: IllustrationConfig): Promise<string | null> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const systemPrompt = `Variation of Input 1: "${variationPrompt}". Intensity: ${config.intensity}%, PropSize: ${config.propSize}%`;
+  const parts = [{ inlineData: { data: cleanBase64(baseImage), mimeType: 'image/png' } }, { text: systemPrompt }];
+  return generateSingleImage(ai, parts, '1:1');
+};
+
+export const enhancePrompt = async (apiKey: string, simplePrompt: string): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: 'Detailed realistic description of: ' + simplePrompt
+  });
+  return response.text || simplePrompt;
+};
+
+export const generateBTSImage = async (apiKey: string, imageBase64: string, title: string, characters: string, era: string, vibe: string, energy: string, phase: string, aesthetic: string): Promise<string[]> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const systemPrompt = `BTS still of User (Input 1) with ${characters} on set of ${title}. Aesthetic: ${aesthetic}.`;
+  const parts = [{ inlineData: { data: cleanBase64(imageBase64), mimeType: 'image/png' } }, { text: systemPrompt }];
+  const promises = Array(4).fill(null).map(() => generateSingleImage(ai, parts, '9:16'));
+  const results = await Promise.all(promises);
+  return results.filter((res): res is string => res !== null);
+};
+
+export const generateBTSVideo = async (apiKey: string, firstFrameBase64: string, title: string, characters: string, aesthetic: string): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey });
+  let operation = await ai.models.generateVideos({
+    model: 'veo-3.1-fast-generate-preview',
+    prompt: `BTS video of ${title} with ${characters}, ${aesthetic}`,
+    image: { imageBytes: cleanBase64(firstFrameBase64), mimeType: 'image/png' },
+    config: { numberOfVideos: 1, resolution: '720p', aspectRatio: '9:16' }
+  });
+  while (!operation.done) {
+    await new Promise(r => setTimeout(r, 10000));
+    operation = await ai.operations.getVideosOperation({ operation });
+  }
   const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-  if (!downloadLink) throw new Error("Video generation failed.");
-  
   const response = await fetch(`${downloadLink}&key=${apiKey}`);
   const blob = await response.blob();
   return URL.createObjectURL(blob);
 };
 
-// Twinly Editor Logic
-export const generateEditedImage = async (
-  apiKey: string,
-  imageBase64: string, 
-  mimeType: string, 
-  userPrompt: string,
-  applyToAll: boolean = true,
-  enhancements: CosmeticEnhancements,
-  aspectRatio: AspectRatio = '1:1',
-  customBackgroundBase64?: string | null
-): Promise<string[]> => {
-  if (!apiKey) throw new Error("API Key is missing.");
+export const generateEditedImage = async (apiKey: string, imageBase64: string, mimeType: string, userPrompt: string, applyToAll: boolean, enhancements: CosmeticEnhancements, aspectRatio: AspectRatio, customBackgroundBase64?: string | null): Promise<string[]> => {
   const ai = new GoogleGenAI({ apiKey });
-
-  const targetHair = enhancements.hairStyle !== 'default' ? enhancements.hairStyle.replace(/_/g, ' ') : null;
-  const targetColor = enhancements.hairColor !== 'default' ? enhancements.hairColor.replace(/_/g, ' ') : null;
-  const targetFacialHair = enhancements.facialHair !== 'default' ? enhancements.facialHair.replace(/_/g, ' ') : null;
-  const targetTexture = enhancements.hairTexture !== 'default' ? enhancements.hairTexture.replace(/_/g, ' ') : null;
-  const targetSubject = (enhancements.hairTarget || 'everyone').replace(/_/g, ' ');
-
-  const systemPrompt = `
-    ROLE: Forensic Identity Specialist.
-    TASK: Edit the image strictly maintaining the identity of the subjects.
-    
-    INSTRUCTION: "${userPrompt}"
-    
-    HAIR CHANGES (Target: ${targetSubject}):
-    ${targetHair ? `- Style: ${targetHair}` : ''}
-    ${targetColor ? `- Color: ${targetColor}` : ''}
-    ${targetTexture ? `- Texture: ${targetTexture}` : ''}
-    ${targetFacialHair ? `- Facial Hair: ${targetFacialHair}` : ''}
-
-    STRICT IDENTITY LOCK: Do not alter facial structure or skin tone.
-  `;
-
-  const parts: any[] = [
-    { inlineData: { data: cleanBase64(imageBase64), mimeType: mimeType } }
-  ];
-
-  if (customBackgroundBase64) {
-    parts.push({ inlineData: { data: cleanBase64(customBackgroundBase64), mimeType: 'image/png' } });
-  }
-
+  const systemPrompt = `Edit image: "${userPrompt}". Hair Style: ${enhancements.hairStyle}, Hair Color: ${enhancements.hairColor}. Identity locked.`;
+  const parts: any[] = [{ inlineData: { data: cleanBase64(imageBase64), mimeType } }];
+  if (customBackgroundBase64) parts.push({ inlineData: { data: cleanBase64(customBackgroundBase64), mimeType: 'image/png' } });
   parts.push({ text: systemPrompt });
-
-  const promises = Array(4).fill(null).map(async (_, index) => {
-    if (index > 0) await new Promise(resolve => setTimeout(resolve, index * 600));
-    return generateSingleImage(ai, parts, aspectRatio);
-  });
-  
+  const promises = Array(4).fill(null).map(() => generateSingleImage(ai, parts, aspectRatio));
   const results = await Promise.all(promises);
   return results.filter((res): res is string => res !== null);
 };
 
-// Creator Studio, UGC Studio & Virtual Try-On Logic
-export const generateCompositeImage = async (
-  apiKey: string,
-  subjectBase64: string,
-  referenceBase64: string, // Product or Outfit
-  mode: 'CREATOR' | 'TRYON' | 'UGC',
-  userPrompt: string,
-  aspectRatio: AspectRatio = '3:4',
-  hairStyle: HairStyle = 'default',
-  nailStyle: NailStyle = 'default',
-  nailColor: string = 'default'
-): Promise<string[]> => {
-  if (!apiKey) throw new Error("API Key is missing.");
+export const generateCompositeImage = async (apiKey: string, subjectBase64: string, referenceBase64: string, mode: 'CREATOR' | 'TRYON' | 'UGC', userPrompt: string, aspectRatio: AspectRatio = '3:4', hairStyle: HairStyle = 'default', nailStyle: NailStyle = 'default', nailColor: string = 'default'): Promise<string[]> => {
   const ai = new GoogleGenAI({ apiKey });
-
-  let systemPrompt = "";
-
-  if (mode === 'CREATOR') {
-    systemPrompt = `ROLE: Product Photographer. TASK: Place the Product (Input 2) with the Model (Input 1). SCENE: ${userPrompt || "Luxury studio"}.`;
-  } else if (mode === 'UGC') {
-    systemPrompt = `ROLE: Content Creator. TASK: Authentic lifestyle shot of Influencer (Input 1) with Product (Input 2). VIBE: ${userPrompt || "Candid selfie"}.`;
-  } else {
-    // TRYON - AGGRESSIVE REALISM & SEAMLESS BLENDING
-    const hairInstruction = hairStyle !== 'default' ? `HAIRSTYLE: Update the subject's hair to a ${hairStyle.replace(/_/g, ' ')} style.` : "HAIRSTYLE: Maintain original hair exactly.";
-    const nailInstruction = nailStyle !== 'default' ? `NAILS: Apply ${nailStyle.replace(/_/g, ' ')} shape nails in ${nailColor === 'default' ? 'a natural' : nailColor} color.` : "";
-    
-    systemPrompt = `
-      TASK: Perform a high-fidelity digital clothing swap. 
-      SOURCE_IDENTITY: Use the exact face and skin tone of the person in Input 1. DO NOT change any facial features.
-      TARGET_OUTFIT: Transfer the clothes, jewelry, bag, and shoes from Input 2 onto the subject.
-      
-      *** STRICT CONSTRAINTS ***
-      1. **JEWELRY REPLACEMENT**: REMOVE ALL ORIGINAL JEWELRY (earrings, necklaces, rings, bracelets) that the person is wearing in Input 1. The ONLY jewelry on the model must be the jewelry from the new outfit in Input 2. If Input 2 has no jewelry, the model should wear none.
-      2. **ORIGINAL LOOK**: The result must look like the original photo, not a photoshop. The clothing must drape naturally on the body with perfect matching shadows and lighting.
-      3. **FULL BODY**: The subject must be in a STANDING POSE to show the entire outfit including SHOES.
-      4. **EXCLUSION**: DO NOT include perfume bottles or scent packaging from Input 2. Focus only on wearable clothes, jewelry, bag, and shoes.
-      5. **BACKGROUND**: Generate a high-end, complementary studio or lifestyle environment background that matches the outfit.
-      6. **STRICT IDENTITY LOCK**: Ensure facial features are consistently locked and not altered in any way from Input 1.
-      
-      ${hairInstruction}
-      ${nailInstruction}
-      ${userPrompt || ""}
-    `;
-  }
-
-  const parts = [
-    { inlineData: { data: cleanBase64(subjectBase64), mimeType: 'image/png' } },
-    { inlineData: { data: cleanBase64(referenceBase64), mimeType: 'image/png' } },
-    { text: systemPrompt }
-  ];
-
-  const promises = Array(4).fill(null).map(async (_, index) => {
-    if (index > 0) await new Promise(resolve => setTimeout(resolve, index * 800));
-    return generateSingleImage(ai, parts, aspectRatio);
-  });
-  
+  const systemPrompt = `Fashion swap. Subject: Input 1. Outfit: Input 2. Hair: ${hairStyle}, Nails: ${nailStyle} in ${nailColor}. Instruction: ${userPrompt}`;
+  const parts = [{ inlineData: { data: cleanBase64(subjectBase64), mimeType: 'image/png' } }, { inlineData: { data: cleanBase64(referenceBase64), mimeType: 'image/png' } }, { text: systemPrompt }];
+  const promises = Array(4).fill(null).map(() => generateSingleImage(ai, parts, aspectRatio));
   const results = await Promise.all(promises);
   return results.filter((res): res is string => res !== null);
 };
 
-export const generateMockup = async (
-  apiKey: string,
-  designBase64: string,
-  targetProduct: string | null,
-  productType: string,
-  material: string,
-  userPrompt: string,
-  aspectRatio: AspectRatio = '1:1'
-): Promise<string[]> => {
-  if (!apiKey) throw new Error("API Key is missing.");
+export const generateMockup = async (apiKey: string, artworkBase64: string, productType: string, scene: string, config: { scale: number, position: string }): Promise<string | null> => {
   const ai = new GoogleGenAI({ apiKey });
-
-  const systemPrompt = `ROLE: Mockup Artist. TASK: Apply design (Input 1) onto ${productType} (${material}).`;
-  const parts: any[] = [{ inlineData: { data: cleanBase64(designBase64), mimeType: 'image/png' } }];
-  if (targetProduct) parts.push({ inlineData: { data: cleanBase64(targetProduct), mimeType: 'image/png' } });
-  parts.push({ text: systemPrompt });
-
-  const promises = Array(4).fill(null).map(async (_, index) => {
-    if (index > 0) await new Promise(resolve => setTimeout(resolve, index * 600));
-    return generateSingleImage(ai, parts, aspectRatio);
-  });
-  
-  const results = await Promise.all(promises);
-  return results.filter((res): res is string => res !== null);
+  const parts = [{ inlineData: { data: cleanBase64(artworkBase64), mimeType: 'image/png' } }, { text: `Mockup ${productType} in ${scene}` }];
+  return generateSingleImage(ai, parts, '1:1');
 };
 
-export const generateSocialCaptions = async (
-  apiKey: string,
-  imageBase64: string,
-  platforms: SocialPlatform[],
-  context: string = "",
-  options: CaptionOptions
-): Promise<SocialCaptions> => {
-  if (!apiKey) throw new Error("API Key is missing.");
+export const generatePosterPlacement = async (apiKey: string, artworkBase64: string, locationPrompt: string, posterRatio: string = "2:3"): Promise<string | null> => {
   const ai = new GoogleGenAI({ apiKey });
+  const parts = [{ inlineData: { data: cleanBase64(artworkBase64), mimeType: 'image/png' } }, { text: `Place artwork in ${locationPrompt}` }];
+  return generateSingleImage(ai, parts, '16:9');
+};
 
-  const prompt = `Generate distinct social captions for: ${platforms.join(', ')}. Context: "${context}". Tone: ${options.tone}. Return JSON.`;
-  const properties: Record<string, any> = {};
-  const requiredFields: string[] = [];
-  if (platforms.includes('instagram')) { properties.instagram = { type: Type.STRING }; requiredFields.push('instagram'); }
-  if (platforms.includes('tiktok')) { properties.tiktok = { type: Type.STRING }; requiredFields.push('tiktok'); }
-  if (platforms.includes('facebook')) { properties.facebook = { type: Type.STRING }; requiredFields.push('facebook'); }
-  if (platforms.includes('twitter')) { properties.twitter = { type: Type.STRING }; requiredFields.push('twitter'); }
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ inlineData: { data: cleanBase64(imageBase64), mimeType: 'image/png' } }, { text: prompt }] },
-      config: { responseMimeType: "application/json", responseSchema: { type: Type.OBJECT, properties, required: requiredFields } }
-    });
-    return JSON.parse(response.text || '{}') as SocialCaptions;
-  } catch (error) {
-    throw error;
-  }
+export const generateSocialCaptions = async (apiKey: string, imageBase64: string, platforms: SocialPlatform[], context: string, options: CaptionOptions): Promise<SocialCaptions> => {
+  const ai = new GoogleGenAI({ apiKey });
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: { parts: [{ inlineData: { data: cleanBase64(imageBase64), mimeType: 'image/png' } }, { text: `Captions for ${platforms.join(',')}` }] },
+    config: { responseMimeType: "application/json" }
+  });
+  return JSON.parse(response.text);
 };
 
 export const generateUGCVideoPlan = async (apiKey: string, request: UGCPlanRequest): Promise<UGCVideoPlan> => {
-  if (!apiKey) throw new Error("API Key is missing.");
   const ai = new GoogleGenAI({ apiKey });
-  const prompt = `Create a viral video plan for ${request.platform}. Niche: ${request.niche}. Return JSON.`;
-  const parts: any[] = [{ text: prompt }];
-  if (request.imageBase64) parts.unshift({ inlineData: { data: cleanBase64(request.imageBase64), mimeType: 'image/png' } });
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts },
-      config: { responseMimeType: "application/json", responseSchema: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, viralHook: { type: Type.STRING }, scenes: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { timeRange: { type: Type.STRING }, visual: { type: Type.STRING }, audio: { type: Type.STRING } } } }, caption: { type: Type.STRING }, hashtags: { type: Type.ARRAY, items: { type: Type.STRING } }, postingTips: { type: Type.STRING } } } }
-    });
-    return JSON.parse(response.text || '{}') as UGCVideoPlan;
-  } catch (error) {
-    throw error;
-  }
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: `Video plan for ${request.platform}`,
+    config: { responseMimeType: "application/json" }
+  });
+  return JSON.parse(response.text);
 };
 
 export const initSupportChat = (apiKey: string): Chat => {
-  if (!apiKey) throw new Error("API Key is missing.");
   const ai = new GoogleGenAI({ apiKey });
-  return ai.chats.create({
-    model: 'gemini-3-flash-preview',
-    config: { systemInstruction: "Help users navigate Creator Vault Studio." },
-  });
+  return ai.chats.create({ model: 'gemini-3-flash-preview' });
 };

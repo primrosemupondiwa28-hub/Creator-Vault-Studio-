@@ -1,16 +1,18 @@
+
 import React, { useState, useRef } from 'react';
 import { Wand2, Download, RefreshCw, ArrowLeft, SplitSquareHorizontal, Maximize2, ShieldCheck, Lock, UserCheck, Users, CheckCircle2, Sparkles, Smile, Scale, Palette, Image as ImageIcon, Mountain, Trees, Building2, Upload, X, Layout, Hand, Droplets } from 'lucide-react';
 import { generateEditedImage, CosmeticEnhancements } from '../services/geminiService';
 import { GeneratedImage, AspectRatio, SkinFinish, NailStyle } from '../types';
 
 interface EditorProps {
+  apiKey: string; // Add missing apiKey prop
   originalImage: string;
   mimeType: string;
   onBack: () => void;
   onSaveToHistory: (img: GeneratedImage) => void;
 }
 
-export const Editor: React.FC<EditorProps> = ({ originalImage, mimeType, onBack, onSaveToHistory }) => {
+export const Editor: React.FC<EditorProps> = ({ apiKey, originalImage, mimeType, onBack, onSaveToHistory }) => {
   // generatedImages is now an array of 4
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0); // Which one is currently main view
@@ -55,6 +57,7 @@ export const Editor: React.FC<EditorProps> = ({ originalImage, mimeType, onBack,
       const effectivePrompt = prompt.trim() || "Enhance image quality and apply selected cosmetic and structural adjustments.";
 
       const results = await generateEditedImage(
+        apiKey, // Correct: Added apiKey as first parameter
         originalImage, 
         mimeType, 
         effectivePrompt, 
