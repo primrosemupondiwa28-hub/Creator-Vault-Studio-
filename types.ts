@@ -1,3 +1,4 @@
+
 export type AspectRatio = '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
 export type SkinFinish = 'default' | 'glowing' | 'matte' | 'dewy_satin';
 export type NailStyle = 'default' | 'french' | 'almond' | 'square' | 'stiletto' | 'nude' | 'red' | 'black' | 'chrome';
@@ -14,11 +15,12 @@ export interface GeneratedImage {
   prompt: string;
   timestamp: number;
   aspectRatio?: AspectRatio;
+  videoUrl?: string; // For Veo generated videos
 }
 
 export interface AppState {
-  currentImage: string | null; // Primary Subject Image
-  secondaryImage: string | null; // Product or Outfit Image
+  currentImage: string | null; 
+  secondaryImage: string | null; 
   mimeType: string;
   isGenerating: boolean;
   error: string | null;

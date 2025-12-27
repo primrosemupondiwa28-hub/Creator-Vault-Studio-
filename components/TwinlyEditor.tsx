@@ -148,8 +148,8 @@ export const TwinlyEditor: React.FC<TwinlyEditorProps> = ({ apiKey, originalImag
              <textarea
                value={prompt}
                onChange={(e) => setPrompt(e.target.value)}
-               placeholder="Describe outfit/scene changes (e.g. 'Wearing a red silk dress in Paris')..."
-               className="w-full h-36 bg-luxury-900 border border-brand-900/50 rounded-xl p-4 text-sm text-white font-medium placeholder:text-brand-400/50 focus:border-brand-500 outline-none transition-all shadow-inner"
+               placeholder="Describe outfit/scene changes clearly..."
+               className="w-full h-36 bg-brand-50 border border-brand-500 rounded-xl p-4 text-sm text-black font-bold placeholder:text-gray-500 focus:ring-2 focus:ring-brand-500 outline-none transition-all shadow-inner"
              />
            </div>
 

@@ -1,6 +1,6 @@
 {
-  "name": "Deployed Creator Vault Studio",
-  "description": "Premium AI photo generation studio. Features Twinly Editor for families & couples, Creator Studio, and Virtual Try-On with Rose Gold aesthetic and strict identity preservation.",
+  "name": "Creator Vault Studio Premium",
+  "description": "Premium AI photo and cinematic motion studio. Features Twinly Editor, Search-Grounded BTS Studio, and Veo-3 Video Expansion.",
   "requestFramePermissions": [
     "camera"
   ]

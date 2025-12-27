@@ -209,12 +209,12 @@ export const CaptionGenerator: React.FC<CaptionGeneratorProps> = ({ apiKey, onBa
             </div>
 
             <div>
-              <label className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-2 block">Vibe / Context (Optional)</label>
+              <label className="text-xs font-bold text-brand-500 uppercase tracking-wider mb-2 block">Vibe / Context</label>
               <textarea 
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
-                placeholder="e.g. 'Funny photo of my dog', 'Sales announcement for skincare', 'Travel photo in Bali'. Leave empty for AI interpretation."
-                className="w-full h-24 bg-luxury-900 border border-brand-900/50 rounded-xl p-3 text-brand-50 placeholder-brand-700 focus:border-brand-500 outline-none resize-none"
+                placeholder="Describe the content here for the AI to understand..."
+                className="w-full h-24 bg-brand-50 border border-brand-500 rounded-xl p-3 text-sm text-black font-bold outline-none focus:ring-2 focus:ring-brand-500 transition-all placeholder:text-gray-500 shadow-inner"
               />
             </div>
             

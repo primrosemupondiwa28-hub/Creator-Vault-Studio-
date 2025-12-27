@@ -65,8 +65,15 @@ export const SupportBot: React.FC<SupportBotProps> = ({ apiKey }) => {
         </div>
         <div className="p-4 bg-luxury-800 border-t border-brand-900">
            <div className="relative">
-             <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="w-full bg-luxury-900 border border-brand-900 rounded-full py-3 pl-5 pr-12 text-sm text-white font-medium outline-none focus:border-brand-500 placeholder:text-brand-400/50 transition-all shadow-inner" />
-             <button onClick={handleSend} disabled={!input.trim() || isLoading} className="absolute right-2 top-2 p-1.5 bg-brand-600 text-white rounded-full"><Send className="w-4 h-4" /></button>
+             <input 
+                type="text" 
+                value={input} 
+                onChange={(e) => setInput(e.target.value)} 
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()} 
+                placeholder="Type a message..." 
+                className="w-full bg-brand-50 border border-brand-500 rounded-full py-3 pl-5 pr-12 text-sm text-black font-bold outline-none focus:ring-2 focus:ring-brand-500 transition-all placeholder:text-gray-500 shadow-inner" 
+             />
+             <button onClick={handleSend} disabled={!input.trim() || isLoading} className="absolute right-2 top-2 p-1.5 bg-brand-600 text-white rounded-full transition-all hover:scale-105"><Send className="w-4 h-4" /></button>
            </div>
         </div>
       </div>

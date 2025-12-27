@@ -73,16 +73,6 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSa
     { value: 'cat eye green', label: 'Cat Eye', hex: '#22c55e' },
   ];
 
-  const hairColors = [
-    { value: 'default', label: 'Current' },
-    { value: 'platinum', label: 'Platinum' },
-    { value: 'honey_blonde', label: 'Honey' },
-    { value: 'jet_black', label: 'Jet Black' },
-    { value: 'copper', label: 'Copper' },
-    { value: 'neon_pink', label: 'Neon Pink' },
-    { value: 'silver', label: 'Salt & Pepper' },
-  ];
-
   useEffect(() => {
     let stepInterval: any;
     let progressInterval: any;
@@ -129,7 +119,7 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSa
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-luxury-900 p-6 flex flex-col items-center">
        <div className="w-full max-w-6xl flex justify-between items-center mb-8">
-          <button onClick={onBack} className="flex items-center gap-2 text-brand-300 hover:text-white transition-colors">
+          <button onClick={onBack} className="flex items-center gap-2 text-brand-300 hover:text-white transition-colors font-bold">
              <ArrowLeft className="w-4 h-4" /> Home
           </button>
           <div className="flex flex-col items-center">
@@ -144,14 +134,14 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSa
 
        <div className="flex flex-col lg:flex-row gap-8 w-full max-w-7xl">
           <div className="w-full lg:w-96 space-y-6 max-h-[85vh] overflow-y-auto scrollbar-hide pr-2">
-             <div className="bg-luxury-800 p-4 rounded-3xl border border-brand-900/30 flex flex-col items-center gap-4">
+             <div className="bg-luxury-800 p-4 rounded-3xl border border-brand-900/30 flex flex-col items-center gap-4 shadow-xl">
                 <div className="grid grid-cols-2 gap-3 w-full">
                    <div className="aspect-[3/4] bg-luxury-950 rounded-xl relative overflow-hidden border border-brand-900">
-                      {personImage ? <img src={personImage} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-brand-400 text-[10px] uppercase font-bold">1. Subject</div>}
+                      {personImage ? <img src={personImage} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-brand-400 text-[10px] uppercase font-bold text-center p-2">1. Upload Subject</div>}
                       <input type="file" onChange={handleUpload(setPersonImage)} className="absolute inset-0 opacity-0 cursor-pointer" />
                    </div>
                    <div className="aspect-[3/4] bg-luxury-950 rounded-xl relative overflow-hidden border border-brand-900">
-                      {outfitImage ? <img src={outfitImage} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-brand-400 text-[10px] uppercase font-bold">2. Outfit</div>}
+                      {outfitImage ? <img src={outfitImage} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-brand-400 text-[10px] uppercase font-bold text-center p-2">2. Upload Outfit</div>}
                       <input type="file" onChange={handleUpload(setOutfitImage)} className="absolute inset-0 opacity-0 cursor-pointer" />
                    </div>
                 </div>
@@ -168,10 +158,10 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSa
                    ))}
                 </div>
                 <div>
-                   <p className="text-[10px] font-bold text-brand-500 uppercase mb-2">Modern Nail Catalog</p>
+                   <p className="text-[10px] font-bold text-brand-500 uppercase mb-2 tracking-widest">Nail Catalog</p>
                    <div className="flex flex-wrap gap-2">
                       {nailColorOptions.map(opt => (
-                         <button key={opt.value} onClick={() => setSelectedNailColor(opt.value)} className={`w-7 h-7 rounded-full border-2 transition-all relative ${selectedNailColor === opt.value ? 'border-brand-500 scale-110' : 'border-transparent opacity-70 hover:opacity-100'}`} style={{ backgroundColor: opt.value === 'default' ? 'transparent' : opt.hex }} title={opt.label}>
+                         <button key={opt.value} onClick={() => setSelectedNailColor(opt.value)} className={`w-7 h-7 rounded-full border-2 transition-all relative ${selectedNailColor === opt.value ? 'border-brand-500 scale-110 shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'}`} style={{ backgroundColor: opt.value === 'default' ? 'transparent' : opt.hex }} title={opt.label}>
                             {opt.value === 'default' && <div className="absolute inset-0 flex items-center justify-center text-[10px] text-brand-400 font-bold">X</div>}
                          </button>
                       ))}
@@ -182,24 +172,29 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSa
              <div className="bg-luxury-800 p-5 rounded-3xl border border-brand-900/30 shadow-xl space-y-4">
                 <div className="flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-brand-500" />
-                    <h3 className="text-brand-100 font-serif font-bold text-sm">Variation Parameters</h3>
+                    <h3 className="text-brand-100 font-serif font-bold text-sm">Style Parameters</h3>
                 </div>
                 <div className="space-y-3">
                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-brand-500 uppercase">Emotion</label>
-                      <select value={selectedEmotion} onChange={(e) => setSelectedEmotion(e.target.value)} className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-2.5 text-xs text-brand-100 appearance-none">{emotionOptions.map(e => <option key={e} value={e}>{e}</option>)}</select>
+                      <label className="text-[10px] font-bold text-brand-500 uppercase tracking-widest">Emotion</label>
+                      <select value={selectedEmotion} onChange={(e) => setSelectedEmotion(e.target.value)} className="w-full bg-brand-50 border border-brand-500 rounded-xl p-3 text-xs text-black font-bold appearance-none outline-none focus:ring-2 focus:ring-brand-500">{emotionOptions.map(e => <option key={e} value={e}>{e}</option>)}</select>
                    </div>
                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-brand-500 uppercase">Environment</label>
-                      <select value={selectedBackground} onChange={(e) => setSelectedBackground(e.target.value)} className="w-full bg-luxury-900 border border-brand-900/50 rounded-xl p-2.5 text-xs text-brand-100 appearance-none">{backgroundOptions.map(b => <option key={b} value={b}>{b}</option>)}</select>
+                      <label className="text-[10px] font-bold text-brand-500 uppercase tracking-widest">Environment</label>
+                      <select value={selectedBackground} onChange={(e) => setSelectedBackground(e.target.value)} className="w-full bg-brand-50 border border-brand-500 rounded-xl p-3 text-xs text-black font-bold appearance-none outline-none focus:ring-2 focus:ring-brand-500">{backgroundOptions.map(b => <option key={b} value={b}>{b}</option>)}</select>
                    </div>
                 </div>
-                <textarea value={stylingNotes} onChange={(e) => setStylingNotes(e.target.value)} placeholder="Custom styling (e.g. 'Aura glow', 'Parisian fashion week')..." className="w-full h-20 bg-luxury-900 rounded-xl border border-brand-900/50 p-3 text-brand-50 focus:border-brand-500 outline-none text-xs resize-none" />
+                <textarea 
+                  value={stylingNotes} 
+                  onChange={(e) => setStylingNotes(e.target.value)} 
+                  placeholder="Extra notes (e.g. 'Golden hour glow', 'Summer vibes')..." 
+                  className="w-full h-20 bg-brand-50 border border-brand-500 rounded-xl p-3 text-xs text-black font-bold outline-none focus:ring-2 focus:ring-brand-500 transition-all placeholder:text-gray-500 shadow-inner resize-none" 
+                />
              </div>
 
              <button onClick={handleGenerate} disabled={!personImage || !outfitImage || isGenerating} className="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-serif font-bold text-lg rounded-2xl shadow-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]">
                {isGenerating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-               {isGenerating ? 'Rendering...' : 'Render Variations'}
+               {isGenerating ? 'Rendering...' : 'Render Wardrobe'}
              </button>
           </div>
 
@@ -209,13 +204,14 @@ export const VirtualTryOn: React.FC<VirtualTryOnProps> = ({ apiKey, onBack, onSa
                    <div className="flex flex-col items-center justify-center text-brand-400/10 p-12 text-center">
                       <Shirt className="w-48 h-48 mb-4 opacity-5" />
                       <p className="font-serif text-3xl font-bold">Try-On Mirror</p>
+                      <p className="text-sm mt-2 font-medium opacity-40">Identity and skin tones strictly protected.</p>
                    </div>
                 )}
                 {isGenerating && (
                    <div className="absolute inset-0 bg-luxury-900/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
                       <div className="relative mb-8"><div className="w-24 h-24 rounded-full border-4 border-brand-900 border-t-brand-500 animate-spin" /><Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-brand-400 animate-pulse" /></div>
                       <h3 className="font-serif text-2xl text-brand-100 mb-2 font-bold uppercase tracking-tight">Designing Your Twin</h3>
-                      <p className="text-brand-400/80 font-medium animate-pulse mb-6 max-w-xs">{loadingMessages[loadingStep]}</p>
+                      <p className="text-brand-400/80 font-bold animate-pulse mb-6 max-w-xs uppercase text-[10px] tracking-widest">{loadingMessages[loadingStep]}</p>
                       <div className="w-64 h-2 bg-luxury-950 rounded-full overflow-hidden border border-brand-900/50 mb-3 shadow-inner"><div className="h-full bg-gradient-to-r from-brand-600 to-brand-400 transition-all duration-300 ease-out" style={{ width: `${progress}%` }} /></div>
                       <div className="flex items-center gap-2 mt-4 px-6 py-2.5 bg-emerald-950/40 rounded-full border border-emerald-500/30 shadow-lg"><ShieldCheck className="w-4 h-4 text-emerald-400" /><span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Forensic Identity Preservation Active</span></div>
                    </div>

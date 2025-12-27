@@ -102,7 +102,7 @@ export const MerchStudio: React.FC<MerchStudioProps> = ({ apiKey, onBack, onSave
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-luxury-900 p-6 flex flex-col items-center">
       <div className="w-full max-w-7xl flex justify-between items-center mb-8">
-        <button onClick={onBack} className="flex items-center gap-2 text-brand-300 hover:text-white transition-colors">
+        <button onClick={onBack} className="flex items-center gap-2 text-brand-300 hover:text-white transition-colors font-bold">
           <ArrowLeft className="w-4 h-4" /> Home
         </button>
         <div className="flex flex-col items-center">
@@ -152,7 +152,7 @@ export const MerchStudio: React.FC<MerchStudioProps> = ({ apiKey, onBack, onSave
             <textarea
               value={productList}
               onChange={(e) => setProductList(e.target.value)}
-              className="w-full h-32 bg-luxury-950 border border-brand-900 rounded-xl p-3 text-xs text-brand-50 outline-none focus:border-teal-500 transition-all font-mono scrollbar-thin scrollbar-thumb-brand-900"
+              className="w-full h-32 bg-brand-50 border border-brand-500 rounded-xl p-3 text-sm text-black font-bold outline-none focus:ring-2 focus:ring-brand-500 transition-all font-mono scrollbar-thin scrollbar-thumb-brand-900 placeholder:text-gray-500"
               placeholder="One product per line..."
             />
             <p className="text-[10px] text-brand-400/50 mt-2">Example: Ceramic Mug, Oversized Hoodie, iPhone 15 Case</p>
@@ -325,7 +325,7 @@ export const MerchStudio: React.FC<MerchStudioProps> = ({ apiKey, onBack, onSave
               <button 
                 onClick={downloadAll}
                 className="ml-4 flex flex-col items-center gap-1 text-brand-400 hover:text-teal-400 transition-colors"
-                title="Download All as ZIP (simulated)"
+                title="Download All"
               >
                 <div className="p-3 bg-luxury-900 rounded-full border border-brand-900">
                   <Download className="w-5 h-5" />

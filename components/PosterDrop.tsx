@@ -88,7 +88,7 @@ export const PosterDrop: React.FC<PosterDropProps> = ({ apiKey, onBack, onSaveTo
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-luxury-900 p-6 flex flex-col items-center">
       <div className="w-full max-w-7xl flex justify-between items-center mb-8">
-        <button onClick={onBack} className="flex items-center gap-2 text-brand-300 hover:text-white transition-colors">
+        <button onClick={onBack} className="flex items-center gap-2 text-brand-300 hover:text-white transition-colors font-bold">
           <ArrowLeft className="w-4 h-4" /> Home
         </button>
         <div className="flex flex-col items-center">
@@ -136,7 +136,7 @@ export const PosterDrop: React.FC<PosterDropProps> = ({ apiKey, onBack, onSaveTo
             <textarea
               value={locationList}
               onChange={(e) => setLocationList(e.target.value)}
-              className="w-full h-32 bg-luxury-950 border border-brand-900 rounded-xl p-3 text-xs text-brand-50 outline-none focus:border-blue-500 transition-all font-mono scrollbar-thin scrollbar-thumb-brand-900"
+              className="w-full h-32 bg-brand-50 border border-brand-500 rounded-xl p-3 text-sm text-black font-bold outline-none focus:ring-2 focus:ring-brand-500 transition-all font-mono scrollbar-thin scrollbar-thumb-brand-900 placeholder:text-gray-500"
               placeholder="One location per line..."
             />
             <div className="mt-4">

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Home } from './components/Home';
@@ -30,15 +31,7 @@ const App: React.FC = () => {
         history: savedHistory ? JSON.parse(savedHistory) : []
       };
     } catch (e) {
-      console.warn("Failed to load history from storage", e);
-      return {
-        currentImage: null,
-        secondaryImage: null,
-        mimeType: '',
-        isGenerating: false,
-        error: null,
-        history: []
-      };
+      return { currentImage: null, secondaryImage: null, mimeType: '', isGenerating: false, error: null, history: [] };
     }
   });
   
@@ -49,160 +42,52 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const storedKey = localStorage.getItem('creator_vault_api_key');
-    if (storedKey) {
-      setApiKey(storedKey);
-    }
+    if (storedKey) setApiKey(storedKey);
   }, []);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('creator_vault_history', JSON.stringify(state.history));
-    } catch (e) {
-      console.warn("Failed to save history to storage (likely quota exceeded)", e);
-    }
-  }, [state.history]);
-
   const handleNavigate = (targetView: ViewMode) => {
-    if (targetView === ViewMode.HOME) {
-      setView(ViewMode.HOME);
-      return;
-    }
-    if (apiKey) {
-      setView(targetView);
-    } else {
-      setPendingView(targetView);
-      setShowKeyModal(true);
-    }
+    if (targetView === ViewMode.HOME) { setView(ViewMode.HOME); return; }
+    if (apiKey) setView(targetView);
+    else { setPendingView(targetView); setShowKeyModal(true); }
   };
 
   const handleSaveApiKey = (key: string) => {
     setApiKey(key);
     localStorage.setItem('creator_vault_api_key', key);
     setShowKeyModal(false);
-    if (pendingView) {
-      setView(pendingView);
-      setPendingView(null);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setShowKeyModal(false);
-    setPendingView(null);
-  };
-
-  const handleTwinlyUpload = (base64: string, mimeType: string) => {
-    setState(prev => ({ ...prev, currentImage: base64, mimeType }));
-    setView(ViewMode.TWINLY_EDITOR);
+    if (pendingView) { setView(pendingView); setPendingView(null); }
   };
 
   const handleSaveToHistory = (img: GeneratedImage) => {
-    setState(prev => ({
-      ...prev,
-      history: [img, ...prev.history]
-    }));
+    setState(prev => ({ ...prev, history: [img, ...prev.history] }));
+    localStorage.setItem('creator_vault_history', JSON.stringify([img, ...state.history]));
   };
 
   return (
     <div className="min-h-screen bg-luxury-900 text-brand-50 font-sans selection:bg-brand-500/30">
-      {showKeyModal && (
-        <ApiKeyModal 
-          onSave={handleSaveApiKey} 
-          onClose={handleCloseModal} 
-        />
-      )}
-      
+      {showKeyModal && <ApiKeyModal onSave={handleSaveApiKey} onClose={() => setShowKeyModal(false)} />}
       <Header currentView={view} onChangeView={handleNavigate} />
-      
       <main className="flex-1 relative">
         {view === ViewMode.HOME && <Home onNavigate={handleNavigate} />}
-
         {view === ViewMode.TWINLY_UPLOAD && (
           <div className="container mx-auto py-8">
-             <ImageUpload onImageSelected={handleTwinlyUpload} />
+             <ImageUpload onImageSelected={(b, m) => { setState(prev => ({ ...prev, currentImage: b, mimeType: m })); setView(ViewMode.TWINLY_EDITOR); }} />
           </div>
         )}
-
         {view === ViewMode.TWINLY_EDITOR && state.currentImage && (
-          <TwinlyEditor 
-            apiKey={apiKey}
-            originalImage={state.currentImage}
-            mimeType={state.mimeType}
-            onBack={() => setView(ViewMode.HOME)} 
-            onSaveToHistory={handleSaveToHistory}
-          />
+          <TwinlyEditor apiKey={apiKey} originalImage={state.currentImage} mimeType={state.mimeType} onBack={() => setView(ViewMode.HOME)} onSaveToHistory={handleSaveToHistory} />
         )}
-
-        {view === ViewMode.CREATOR_STUDIO && (
-          <CreatorStudio 
-            apiKey={apiKey}
-            onBack={() => setView(ViewMode.HOME)}
-            onSaveToHistory={handleSaveToHistory}
-          />
-        )}
-
-        {view === ViewMode.UGC_STUDIO && (
-          <UGCStudio 
-            apiKey={apiKey}
-            onBack={() => setView(ViewMode.HOME)}
-            onSaveToHistory={handleSaveToHistory}
-          />
-        )}
-
-        {view === ViewMode.VIRTUAL_TRYON && (
-          <VirtualTryOn 
-            apiKey={apiKey}
-            onBack={() => setView(ViewMode.HOME)}
-            onSaveToHistory={handleSaveToHistory}
-          />
-        )}
-
-        {view === ViewMode.MERCH_STUDIO && (
-          <MerchStudio 
-            apiKey={apiKey}
-            onBack={() => setView(ViewMode.HOME)}
-            onSaveToHistory={handleSaveToHistory}
-          />
-        )}
-
-        {view === ViewMode.BTS_STUDIO && (
-          <BTSStudio 
-            apiKey={apiKey}
-            onBack={() => setView(ViewMode.HOME)}
-            onSaveToHistory={handleSaveToHistory}
-          />
-        )}
-
-        {view === ViewMode.DYNAMIC_ILLUSTRATION && (
-          <DynamicIllustration 
-            apiKey={apiKey}
-            onBack={() => setView(ViewMode.HOME)}
-          />
-        )}
-
-        {view === ViewMode.POSTER_DROP && (
-          <PosterDrop 
-            apiKey={apiKey}
-            onBack={() => setView(ViewMode.HOME)}
-            onSaveToHistory={handleSaveToHistory}
-          />
-        )}
-
-        {view === ViewMode.CAPTION_GENERATOR && (
-          <CaptionGenerator 
-            apiKey={apiKey}
-            onBack={() => setView(ViewMode.HOME)}
-          />
-        )}
-
-        {view === ViewMode.EXPLORE_PROMPTS && (
-          <ExplorePrompts onBack={() => setView(ViewMode.HOME)} />
-        )}
-
-        {view === ViewMode.GALLERY && (
-          <Gallery history={state.history} onSelect={() => {}} />
-        )}
+        {view === ViewMode.CREATOR_STUDIO && <CreatorStudio apiKey={apiKey} onBack={() => setView(ViewMode.HOME)} onSaveToHistory={handleSaveToHistory} />}
+        {view === ViewMode.UGC_STUDIO && <UGCStudio apiKey={apiKey} onBack={() => setView(ViewMode.HOME)} onSaveToHistory={handleSaveToHistory} />}
+        {view === ViewMode.VIRTUAL_TRYON && <VirtualTryOn apiKey={apiKey} onBack={() => setView(ViewMode.HOME)} onSaveToHistory={handleSaveToHistory} />}
+        {view === ViewMode.MERCH_STUDIO && <MerchStudio apiKey={apiKey} onBack={() => setView(ViewMode.HOME)} onSaveToHistory={handleSaveToHistory} />}
+        {view === ViewMode.BTS_STUDIO && <BTSStudio apiKey={apiKey} onBack={() => setView(ViewMode.HOME)} onSaveToHistory={handleSaveToHistory} />}
+        {view === ViewMode.DYNAMIC_ILLUSTRATION && <DynamicIllustration apiKey={apiKey} onBack={() => setView(ViewMode.HOME)} />}
+        {view === ViewMode.POSTER_DROP && <PosterDrop apiKey={apiKey} onBack={() => setView(ViewMode.HOME)} onSaveToHistory={handleSaveToHistory} />}
+        {view === ViewMode.CAPTION_GENERATOR && <CaptionGenerator apiKey={apiKey} onBack={() => setView(ViewMode.HOME)} />}
+        {view === ViewMode.EXPLORE_PROMPTS && <ExplorePrompts onBack={() => setView(ViewMode.HOME)} />}
+        {view === ViewMode.GALLERY && <Gallery history={state.history} onSelect={() => {}} />}
       </main>
-
       <SupportBot apiKey={apiKey} />
     </div>
   );
